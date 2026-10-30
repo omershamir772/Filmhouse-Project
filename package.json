@@ -19,7 +19,7 @@
     "@aws-sdk/client-s3": "^3.1161.0",
     "@electric-sql/pglite": "^0.5.13",
     "@sentry/node": "^11.10.0",
-    "ejs": "^3.1.10",
+    "ejs": "^7.0.2",
     "express": "^5.3.0",
     "helmet": "^8.3.0",
     "multer": "^2.5.0",
