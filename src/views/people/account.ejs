@@ -1,0 +1,76 @@
+<%- include('../partials/head') %>
+<section class="wrap medium page-pad">
+  <p class="eyebrow">Behind the curtain</p>
+  <h1 class="display">Account &amp; privacy</h1>
+  <p class="small"><a href="/settings">← Back to your profile</a></p>
+  <% if (notice) { %><div class="notice notice-ok"><%= notice %></div><% } %>
+  <%- include('../partials/errors') %>
+
+  <div class="stack">
+    <form method="post" action="/settings/password" class="card form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <h2 class="side-title">Change password</h2>
+      <div class="row">
+        <label>Current password <input type="password" name="current_password" required autocomplete="current-password"></label>
+        <label>New password <input type="password" name="new_password" required minlength="10" autocomplete="new-password"></label>
+      </div>
+      <div class="form-actions"><button class="btn" type="submit">Change password</button></div>
+    </form>
+
+    <form method="post" action="/settings/email" class="card form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <h2 class="side-title">Email</h2>
+      <p class="small muted">Currently <strong><%= currentUser.email %></strong> — <%= currentUser.email_verified_at ? 'confirmed' : 'not confirmed yet' %>.</p>
+      <div class="row">
+        <label>New email <input type="email" name="email" required autocomplete="email"></label>
+        <label>Current password <input type="password" name="current_password" required autocomplete="current-password"></label>
+      </div>
+      <div class="form-actions"><button class="btn" type="submit">Change email</button></div>
+    </form>
+
+    <form method="post" action="/settings/sessions/revoke" class="card form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <h2 class="side-title">Devices</h2>
+      <p class="small muted">You're signed in on <%= sessionCount %> <%= sessionCount === 1 ? 'device' : 'devices' %>.</p>
+      <div class="form-actions"><button class="btn btn-ghost" type="submit">Sign out everywhere else</button></div>
+    </form>
+
+    <div class="card">
+      <h2 class="side-title">Blocked people</h2>
+      <% if (blocked.length) { %>
+        <ul class="plain-list">
+          <% blocked.forEach(function (b) { %>
+            <li>
+              <a href="/u/<%= b.username %>"><%= b.display_name %></a>
+              <form method="post" action="/u/<%= b.username %>/block" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="action" value="unblock">
+                <button class="link-button small" type="submit">Unblock</button>
+              </form>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="small muted">You haven't blocked anyone.</p>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <h2 class="side-title">Your data</h2>
+      <p class="small muted">Download everything FilmHouse holds about you as a JSON file.</p>
+      <a class="btn btn-ghost" href="/settings/export.json">Download my data</a>
+    </div>
+
+    <form method="post" action="/settings/delete" class="card form danger-card" data-confirm="This permanently deletes your account, films, recommendations, bulletins and photos. Continue?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <h2 class="side-title">Delete account</h2>
+      <p class="small muted">Deletes your profile, films, recommendations, bulletins and set photos. Credits on other people's films stay as your name only. This can't be undone.</p>
+      <div class="row">
+        <label>Type your username (<%= currentUser.username %>) <input name="confirm" required autocomplete="off"></label>
+        <label>Current password <input type="password" name="current_password" required autocomplete="current-password"></label>
+      </div>
+      <div class="form-actions"><button class="btn btn-danger" type="submit">Delete my account</button></div>
+    </form>
+  </div>
+</section>
+<%- include('../partials/foot') %>

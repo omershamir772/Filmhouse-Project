@@ -1,0 +1,13 @@
+<%- include('../partials/head') %>
+<section class="wrap narrow page-pad">
+  <p class="eyebrow">One more step</p>
+  <h1 class="display">Confirm your email</h1>
+  <p class="lead">To keep FilmHouse free of spam and fake gigs, you need to confirm your email address before you can post, credit people, recommend or upload.</p>
+  <p>We sent a link to <strong><%= currentUser.email %></strong>.</p>
+  <form method="post" action="/verify/resend" class="inline">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button class="btn" type="submit">Send the link again</button>
+  </form>
+  <p class="small muted">Wrong address? <a href="/settings/account">Change it in your account settings</a>.</p>
+</section>
+<%- include('../partials/foot') %>

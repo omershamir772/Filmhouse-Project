@@ -1,0 +1,59 @@
+# Render Blueprint for FilmHouse production: the web app plus a private Postgres database.
+# Import it from the Render dashboard (New → Blueprint) and fill in the values marked `sync: false`.
+# See docs/DEPLOYING.md for the full checklist.
+
+services:
+  - type: web
+    name: filmhouse
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start            # applies database migrations, then starts the server
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: filmhouse-db
+          property: connectionString
+      - key: APP_SECRET
+        generateValue: true
+      # Proxies in front of the app: 1 = Render only, 2 = Cloudflare (proxied DNS) + Render.
+      - key: TRUST_PROXY
+        value: "2"
+      - key: MIN_AGE
+        value: "18"
+      - key: APP_URL                   # e.g. https://filmhouse.example
+        sync: false
+      - key: EMAIL_FROM                # e.g. FilmHouse <hello@filmhouse.example>
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_PUBLIC_URL             # e.g. https://media.filmhouse.example
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: BETA_INVITE_CODES         # comma separated; remove for open sign-up
+        sync: false
+
+databases:
+  - name: filmhouse-db
+    plan: basic-256mb
+    region: frankfurt
+    databaseName: filmhouse
+    user: filmhouse
+    postgresMajorVersion: "16"
+    # No connections from the internet; only services in this Render account can reach it.
+    ipAllowList: []

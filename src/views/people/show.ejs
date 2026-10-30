@@ -1,5 +1,4 @@
 <%- include('../partials/head') %>
-<% var isMe = currentUser && currentUser.id === profile.id; %>
 <section class="profile-hero">
   <div class="wrap profile-head">
     <span class="avatar avatar-xl" aria-hidden="true"><%= initials(profile.display_name) %></span>
@@ -16,6 +15,14 @@
         <% if (profile.letterboxd) { %><a class="letterboxd" href="https://letterboxd.com/<%= profile.letterboxd %>/" rel="noopener noreferrer" target="_blank"><span class="lb-dots" aria-hidden="true"><i></i><i></i><i></i></span> Letterboxd</a><% } %>
         <% if (profile.website) { %><a href="<%= profile.website %>" rel="noopener noreferrer nofollow" target="_blank">Website ↗</a><% } %>
         <% if (isMe) { %><a class="btn btn-ghost btn-small" href="/settings">Edit profile</a><% } %>
+        <% if (currentUser && !isMe) { %>
+          <form method="post" action="/u/<%= profile.username %>/block" class="inline" <%- iBlocked ? '' : 'data-confirm="Block this person? You won\'t see their posts, and they won\'t be able to recommend your films."' %>>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="action" value="<%= iBlocked ? 'unblock' : 'block' %>">
+            <button class="link-button small" type="submit"><%= iBlocked ? 'Unblock' : 'Block' %></button>
+          </form>
+          <a class="small muted" href="/report?type=user&amp;id=<%= profile.id %>">Report</a>
+        <% } %>
       </p>
     </div>
   </div>

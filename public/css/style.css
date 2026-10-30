@@ -606,3 +606,22 @@ input[type='radio'], input[type='checkbox'] { accent-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---------- Security & moderation additions ---------- */
+
+.site-banner { background: var(--brass-soft); border-bottom: 1px solid var(--brass); padding: 10px 20px; text-align: center; font-size: 0.9rem; }
+.site-banner .link-button { color: var(--brass); text-decoration: underline; }
+.footer-links { margin-top: 8px; }
+.footer-links a { color: var(--muted); }
+.btn-danger { background: var(--velvet); border-color: var(--velvet); color: #fff8ec !important; }
+.danger-card { border-color: var(--velvet); }
+.prose h2 { font-size: 1.35rem; margin-top: 1.6em; }
+.prose ul { padding-left: 20px; }
+.prose li { margin-bottom: 6px; max-width: 70ch; }
+.report-card p { margin-bottom: 8px; }
+.report-thumb { width: 160px; border-radius: 6px; margin-bottom: 10px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.data-table th, .data-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.data-table th { font-family: var(--font-type); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--surface); }
+.data-table tr:last-child td { border-bottom: 0; }

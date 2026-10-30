@@ -7,42 +7,44 @@ const { toList } = require('./text');
  * A person written as "@username" is linked to that member's profile; anything else is
  * credited by name only (for crew who haven't joined FilmHouse yet).
  */
-function parseCredits(db, body) {
+async function parseCredits(db, body) {
   const roles = toList(body.credit_role);
   const people = toList(body.credit_person);
-  const findUser = db.prepare('SELECT id, username, display_name FROM users WHERE username = ?');
   const credits = [];
   const errors = [];
   const seen = new Set();
 
-  roles.forEach((rawRole, i) => {
+  for (const [i, rawRole] of roles.entries()) {
     const role = String(rawRole || '').trim();
     const person = String(people[i] || '').trim();
-    if (!person) return;
+    if (!person) continue;
     if (!ALL_ROLES.includes(role)) {
       errors.push(`Pick a role for ${person}.`);
-      return;
+      continue;
     }
     if (person.length > 80) {
       errors.push('Credit names must be under 80 characters.');
-      return;
+      continue;
     }
     let credit;
     if (person.startsWith('@')) {
-      const user = findUser.get(person.slice(1).toLowerCase());
+      const user = await db.one('SELECT id, username, display_name FROM users WHERE lower(username) = lower($1) AND suspended_at IS NULL', [
+        person.slice(1),
+      ]);
       if (!user) {
         errors.push(`There's no FilmHouse member called ${person}. Remove the @ to credit them by name.`);
-        return;
+        continue;
       }
       credit = { role, user_id: user.id, name: user.display_name, input: person };
     } else {
       credit = { role, user_id: null, name: person, input: person };
     }
     const key = `${role}|${credit.user_id ?? credit.name.toLowerCase()}`;
-    if (seen.has(key)) return;
+    if (seen.has(key)) continue;
     seen.add(key);
     credits.push({ ...credit, position: credits.length });
-  });
+  }
+  if (credits.length > 60) errors.push('That is a lot of credits — please keep it to 60.');
 
   for (const role of REQUIRED_ROLES) {
     if (!credits.some((c) => c.role === role)) errors.push(`Every film needs a credited ${role}.`);
@@ -61,10 +63,17 @@ function creditFormRows(credits = []) {
   return rows;
 }
 
-function saveCredits(db, filmId, credits) {
-  db.prepare('DELETE FROM credits WHERE film_id = ?').run(filmId);
-  const insert = db.prepare('INSERT INTO credits (film_id, role, user_id, name, position) VALUES (?, ?, ?, ?, ?)');
-  for (const c of credits) insert.run(filmId, c.role, c.user_id, c.name, c.position);
+async function saveCredits(db, filmId, credits) {
+  await db.query('DELETE FROM credits WHERE film_id = $1', [filmId]);
+  for (const c of credits) {
+    await db.query('INSERT INTO credits (film_id, role, user_id, name, position) VALUES ($1, $2, $3, $4, $5)', [
+      filmId,
+      c.role,
+      c.user_id,
+      c.name,
+      c.position,
+    ]);
+  }
 }
 
 module.exports = { parseCredits, creditFormRows, saveCredits };

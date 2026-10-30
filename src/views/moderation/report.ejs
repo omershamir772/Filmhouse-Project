@@ -1,0 +1,26 @@
+<%- include('../partials/head') %>
+<section class="wrap narrow page-pad">
+  <p class="eyebrow">Report</p>
+  <h1 class="display">What's wrong?</h1>
+  <p class="lead"><%= label %>: <a href="<%= info.href %>"><%= info.title %></a></p>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/report" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="type" value="<%= target.type %>">
+    <input type="hidden" name="id" value="<%= target.id %>">
+    <fieldset>
+      <legend>Reason</legend>
+      <div class="segmented segmented-stack">
+        <% reasons.forEach(function (r) { %>
+          <label><input type="radio" name="reason" value="<%= r %>" required> <span><%= r %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <label>Anything else a moderator should know? <span class="hint">(optional)</span>
+      <textarea name="details" rows="4" maxlength="2000"></textarea>
+    </label>
+    <div class="form-actions"><button class="btn" type="submit">Send report</button></div>
+    <p class="small muted">Reports are private. The person you report isn't told who reported them.</p>
+  </form>
+</section>
+<%- include('../partials/foot') %>

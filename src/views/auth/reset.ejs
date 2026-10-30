@@ -1,0 +1,17 @@
+<%- include('../partials/head') %>
+<section class="wrap narrow page-pad">
+  <p class="eyebrow">Fresh start</p>
+  <h1 class="display">Choose a new password</h1>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/reset" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="token" value="<%= token %>">
+    <label>New password
+      <input type="password" name="password" required minlength="10" autocomplete="new-password">
+      <span class="hint">At least 10 characters. A few unrelated words works well.</span>
+    </label>
+    <button class="btn btn-large" type="submit">Save new password</button>
+    <p class="small muted">You'll be signed out everywhere and can sign in again with the new password.</p>
+  </form>
+</section>
+<%- include('../partials/foot') %>

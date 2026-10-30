@@ -4,20 +4,36 @@ A networking and portfolio home for film students, independent filmmakers and in
 
 ## Quick start
 
-Requires **Node.js 22.13+**. It uses the built-in `node:sqlite`, so there is no database server to install.
+Requires **Node.js 22.13+**. Nothing else to install: without a `DATABASE_URL`, FilmHouse runs on PGlite, a full Postgres engine embedded in Node, so local development uses the same SQL as production.
 
 ```bash
 npm install
 npm run seed     # demo members, films, credits, recommendations, bulletins and set photos
-npm start        # http://localhost:3000
+npm run dev      # http://localhost:3000
 ```
 
-Every demo account uses the password `filmhouse` (try `noa`, `eli_dp`, `maya_cuts` or `tomas`). To wipe and reseed, run `npm run seed -- --reset`. Run the tests with `npm test`.
+Every demo account uses the password `filmhouse-demo`. Try `noa`, who is an admin (see `/admin`), or `eli_dp`, `maya_cuts` and `tomas`. To wipe and reseed, run `npm run seed -- --reset`. In development, emails (verification, password reset) are printed to the terminal.
 
-| Env var        | Default              | Purpose                 |
-| -------------- | -------------------- | ----------------------- |
-| `PORT`         | `3000`               | HTTP port               |
-| `FILMHOUSE_DB` | `data/filmhouse.db`  | SQLite file path        |
+| Command | What it does |
+| --- | --- |
+| `npm test` | Runs the test suite against in-memory Postgres. Set `TEST_DATABASE_URL` to use a real server. |
+| `npm run migrate` | Applies new database migrations (`npm start` also does this) |
+| `npm run make-admin -- <username>` | Gives a member moderator rights (`--remove` takes them away) |
+
+All settings are environment variables; see [`.env.example`](.env.example).
+
+## Deploying
+
+The app is ready for production on Render, Postgres, Cloudflare R2, Resend and Sentry. Follow **[docs/DEPLOYING.md](docs/DEPLOYING.md)**, a step-by-step runbook with a launch checklist. The infrastructure is defined in [`render.yaml`](render.yaml). CI (tests on PGlite and on real Postgres 16, `npm audit`, secret scanning) is in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+## Security
+
+See **[SECURITY.md](SECURITY.md)** for how members are protected, how to report a vulnerability and what to do in an incident. In short:
+- verified emails, rate limits and hashed sessions
+- strict CSP and HSTS
+- photos re-encoded with GPS data stripped and served from a separate domain
+- reports, blocking, admin moderation and an audit log
+- data export and account deletion
 
 ## MVP features
 
@@ -41,25 +57,27 @@ The site is dark by default, with a light "matinee" mode in the header. The pale
 
 ```
 src/
-  app.js            Express app: security headers, sessions, CSRF, routes
-  db.js             SQLite schema (users, films, credits, recommendations, board, photos, views)
-  constants.js      roles, member statuses, 200-word minimum
-  lib/              auth (scrypt + sessions + CSRF), video URL parsing, credits, ranking, formatting
-  routes/           home, auth, profiles/people, films/recommendations, board, feed
+  server.js         boot: config check, migrations, Sentry, timeouts, hourly clean-up
+  app.js            Express app: helmet/CSP, sessions, CSRF, read-only mode, routes
+  config.js         environment settings; production refuses to start without its secrets
+  db.js             Postgres (pg) or embedded PGlite, transactions, migration runner
+  lib/              auth, rate limits, email, storage (local / R2), image processing, moderation
+  routes/           home, auth, account, profiles, films, board, feed, moderation, policy pages
   views/            EJS templates
+migrations/         versioned SQL
 public/             CSS and progressive-enhancement JS
-scripts/seed.js     demo data
-test/               node:test unit and HTTP tests
+scripts/            seed, migrate, make-admin
+test/               node:test suites (app, security, unit)
 ```
 
-- **Stack:** Express 5, EJS (server-rendered), `node:sqlite` and multer. There is no build step.
-- **Security:** scrypt password hashing and httpOnly SameSite session cookies. Every POST is protected with double-submit CSRF tokens, including multipart uploads. Templates escape output, and redirects only go to local paths. Uploads are checked by MIME type, size-limited and given random filenames.
-- **Demo content:** all people and credits are fictional. The placeholder videos are Blender Foundation open movies (CC BY).
+**Stack:** Express 5 with EJS server-rendered pages, PostgreSQL 16, `sharp` for images, `helmet` for security headers. There is no build step.
+
+**Demo content:** all people and credits are fictional. The placeholder videos are Blender Foundation open movies (CC BY).
 
 ## Ideas for the next iteration
 
-- Credit claiming: email invites for crew who are credited by name but haven't joined
+- Credit claiming: email invites for crew who are credited by name but haven't joined, and disputing a credit
 - Messaging between members, and replies to bulletins
 - Institution pages that list their students and graduation films
 - Notifications when you're credited or recommended
-- Moving to Postgres and object storage (S3/R2) for set photos once the site has real traffic
+- Two-factor sign-in for admins, and new-device login alerts

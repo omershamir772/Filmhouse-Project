@@ -19,8 +19,11 @@
           <a class="small" href="<%= film.video_url %>" rel="noopener noreferrer" target="_blank">Watch on <%= film.provider === 'vimeo' ? 'Vimeo' : 'YouTube' %> ↗</a>
         </p>
         <% if (film.logline) { %><p class="logline"><%= film.logline %></p><% } %>
+        <% if (film.hidden_at) { %><p class="notice notice-error">This film has been hidden by a moderator and only you<%= currentUser && currentUser.role === 'admin' ? ' (and admins)' : '' %> can see it.</p><% } %>
         <% if (currentUser && currentUser.id === film.owner_id) { %>
           <p><a class="btn btn-ghost btn-small" href="/films/<%= film.id %>/edit">Edit film &amp; credits</a></p>
+        <% } else if (currentUser) { %>
+          <p class="small"><a href="/report?type=film&amp;id=<%= film.id %>">Report this film</a></p>
         <% } %>
       </header>
 
@@ -55,6 +58,8 @@
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <button class="link-button danger small" type="submit">Delete</button>
                   </form>
+                <% } else if (currentUser) { %>
+                  <a class="small muted" href="/report?type=recommendation&amp;id=<%= rec.id %>">Report</a>
                 <% } %>
               </article>
             <% }) %>

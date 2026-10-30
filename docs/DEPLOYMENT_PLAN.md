@@ -1,5 +1,7 @@
 # FilmHouse: plan for a public launch
 
+> **Status (30 Oct 2026):** Phase 1 (security hardening in the code) and the code side of Phase 2 (Render blueprint, CI, Dependabot) are built. What remains is account setup and the launch checks in [DEPLOYING.md](DEPLOYING.md).
+
 **Goal:** take the working MVP in this repo to a public site at its own domain, where real film students and filmmakers can sign up safely.
 
 **Approach:** keep the current app (Express + server-rendered pages) and make it production-ready. Don't rewrite it. Its features already work and are tested. Getting to launch means replacing the parts built for a single laptop, and adding the account, safety and legal basics every public community site needs.

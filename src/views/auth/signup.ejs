@@ -6,6 +6,12 @@
   <%- include('../partials/errors') %>
   <form method="post" action="/signup" class="card form">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (config.inviteCodes.length) { %>
+      <label>Invite code
+        <input name="invite" value="<%= form.invite || '' %>" required autocomplete="off">
+        <span class="hint">FilmHouse is invite-only during the beta.</span>
+      </label>
+    <% } %>
     <label>Your name
       <input name="display_name" value="<%= form.display_name || '' %>" required maxlength="60" autocomplete="name">
     </label>
@@ -17,7 +23,8 @@
       <input type="email" name="email" value="<%= form.email || '' %>" required autocomplete="email">
     </label>
     <label>Password
-      <input type="password" name="password" required minlength="8" autocomplete="new-password">
+      <input type="password" name="password" required minlength="10" autocomplete="new-password">
+      <span class="hint">At least 10 characters. A few unrelated words works well.</span>
     </label>
     <fieldset>
       <legend>I am a…</legend>
@@ -27,6 +34,8 @@
         <% }) %>
       </div>
     </fieldset>
+    <label class="check"><input type="checkbox" name="age" value="yes" required> <span>I am at least <%= config.minAge %> years old.</span></label>
+    <label class="check"><input type="checkbox" name="terms" value="yes" required> <span>I agree to the <a href="/terms" target="_blank">terms</a> and <a href="/guidelines" target="_blank">community guidelines</a>, and have read the <a href="/privacy" target="_blank">privacy policy</a>.</span></label>
     <button class="btn btn-large" type="submit">Create my account</button>
     <p class="small muted">Already a member? <a href="/login">Sign in</a>.</p>
   </form>

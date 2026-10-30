@@ -1,0 +1,93 @@
+<%- include('../partials/head') %>
+<section class="wrap page-pad">
+  <p class="eyebrow">Projection booth</p>
+  <h1 class="display">Moderation</h1>
+
+  <section class="section">
+    <header class="section-head"><h2 class="marquee-title">Open reports (<%= reports.length %>)</h2></header>
+    <% if (reports.length) { %>
+      <div class="stack">
+        <% reports.forEach(function (r) { %>
+          <article class="card report-card">
+            <p class="small muted">#<%= r.id %> · <%= targets[r.target_type].label %> · reported by <%= r.reporter_username ? '@' + r.reporter_username : 'deleted account' %> · <%= timeAgo(r.created_at) %></p>
+            <p><strong><%= r.reason %></strong><% if (r.details) { %> — <%= r.details %><% } %></p>
+            <% if (r.info) { %>
+              <p><a href="<%= r.info.href %>" target="_blank" rel="noopener"><%= r.info.title %></a><%= r.info.hidden ? ' (already hidden)' : '' %></p>
+              <% if (r.info.thumb_key) { %><img class="report-thumb" src="<%= mediaUrl(r.info.thumb_key) %>" alt=""><% } %>
+            <% } else { %>
+              <p class="muted">This content has already been deleted.</p>
+            <% } %>
+            <form method="post" action="/admin/reports/<%= r.id %>" class="form-actions">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <% if (r.info) { %>
+                <button class="btn btn-small" name="action" value="hide" type="submit"><%= r.target_type === 'user' ? 'Suspend user' : 'Hide content' %></button>
+                <% if (r.target_type !== 'user') { %><button class="btn btn-small btn-ghost" name="action" value="suspend" type="submit" data-confirm-button="Suspend the author's account?">Suspend author</button><% } %>
+              <% } %>
+              <button class="link-button" name="action" value="dismiss" type="submit">Dismiss</button>
+            </form>
+          </article>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="empty">No open reports. The house is calm.</p>
+    <% } %>
+  </section>
+
+  <section class="section">
+    <header class="section-head"><h2 class="marquee-title">Find a member</h2></header>
+    <form method="get" action="/admin" class="filter-bar">
+      <label class="grow"><span class="sr-only">Search</span><input type="search" name="user" value="<%= q %>" placeholder="Username, name or email"></label>
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <% if (q) { %>
+      <% if (users.length) { %>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Member</th><th>Email</th><th>Joined</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <% users.forEach(function (u) { %>
+                <tr>
+                  <td><a href="/u/<%= u.username %>"><%= u.display_name %></a> <span class="small muted">@<%= u.username %><%= u.role === 'admin' ? ' · admin' : '' %></span></td>
+                  <td><%= u.email %><%= u.email_verified_at ? '' : ' (unconfirmed)' %></td>
+                  <td><%= fmtDate(u.created_at) %></td>
+                  <td><%= u.suspended_at ? 'Suspended' : 'Active' %></td>
+                  <td>
+                    <% if (u.role !== 'admin') { %>
+                      <form method="post" action="/admin/user/<%= u.id %>/<%= u.suspended_at ? 'unhide' : 'hide' %>" class="inline">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="back" value="users">
+                        <input type="hidden" name="q" value="<%= q %>">
+                        <button class="link-button small <%= u.suspended_at ? '' : 'danger' %>" type="submit"><%= u.suspended_at ? 'Restore' : 'Suspend' %></button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="empty">No members match “<%= q %>”.</p>
+      <% } %>
+    <% } %>
+  </section>
+
+  <section class="section">
+    <header class="section-head"><h2 class="marquee-title">Audit log</h2><p class="small muted">Every moderation action, newest first.</p></header>
+    <% if (log.length) { %>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Target</th><th>Note</th></tr></thead>
+          <tbody>
+            <% log.forEach(function (e) { %>
+              <tr><td><%= timeAgo(e.created_at) %></td><td>@<%= e.actor_name %></td><td><%= e.action %></td><td><%= e.target_type %> #<%= e.target_id %></td><td><%= e.details %></td></tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <p class="empty">Nothing yet.</p>
+    <% } %>
+  </section>
+</section>
+<%- include('../partials/foot') %>

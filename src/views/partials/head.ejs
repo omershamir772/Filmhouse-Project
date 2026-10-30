@@ -25,6 +25,7 @@
       <a href="/people" class="<%= path.startsWith('/people') || path.startsWith('/u/') ? 'active' : '' %>">People</a>
       <span class="nav-spacer"></span>
       <% if (currentUser) { %>
+        <% if (currentUser.role === 'admin') { %><a href="/admin" class="<%= path.startsWith('/admin') ? 'active' : '' %>">Moderation</a><% } %>
         <a class="btn btn-small" href="/films/new">+ Add a film</a>
         <a href="/u/<%= currentUser.username %>" class="nav-me" title="Your profile">
           <span class="avatar avatar-xs" aria-hidden="true"><%= initials(currentUser.display_name) %></span>
@@ -49,4 +50,11 @@
     </nav>
   </div>
 </header>
+<% if (readOnly) { %>
+  <div class="site-banner">FilmHouse is in read-only mode for maintenance. You can browse, but changes are paused.</div>
+<% } else if (currentUser && !currentUser.email_verified_at && path !== '/verify') { %>
+  <div class="site-banner">Confirm your email to start posting — we sent a link to <strong><%= currentUser.email %></strong>.
+    <form method="post" action="/verify/resend" class="inline"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="link-button" type="submit">Send it again</button></form>
+  </div>
+<% } %>
 <main id="main">

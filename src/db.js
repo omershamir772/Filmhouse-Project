@@ -1,129 +1,103 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
 
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS users (
-  id                 INTEGER PRIMARY KEY,
-  username           TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  email              TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  password_hash      TEXT NOT NULL,
-  display_name       TEXT NOT NULL,
-  status             TEXT NOT NULL DEFAULT 'Student',
-  crafts             TEXT NOT NULL DEFAULT '',   -- comma separated roles, e.g. "Cinematographer,Gaffer / Lighting"
-  location           TEXT NOT NULL DEFAULT '',
-  school             TEXT NOT NULL DEFAULT '',
-  bio                TEXT NOT NULL DEFAULT '',
-  letterboxd         TEXT NOT NULL DEFAULT '',   -- Letterboxd username
-  website            TEXT NOT NULL DEFAULT '',
-  created_at         TEXT NOT NULL DEFAULT (datetime('now'))
-);
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
+const MIGRATION_LOCK = 72_724_201;
 
-CREATE TABLE IF NOT EXISTS sessions (
-  token       TEXT PRIMARY KEY,
-  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  expires_at  TEXT NOT NULL
-);
+// Postgres type ids we parse ourselves: DATE stays a plain 'YYYY-MM-DD' string (no timezone
+// surprises) and int8 (COUNT(*)) becomes a JS number.
+const TYPE_DATE = 1082;
+const TYPE_INT8 = 20;
 
-CREATE TABLE IF NOT EXISTS films (
-  id           INTEGER PRIMARY KEY,
-  owner_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title        TEXT NOT NULL,
-  year         INTEGER,
-  runtime_min  INTEGER,
-  logline      TEXT NOT NULL DEFAULT '',
-  video_url    TEXT NOT NULL,
-  provider     TEXT NOT NULL,               -- 'youtube' | 'vimeo'
-  video_id     TEXT NOT NULL,
-  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- A credit links a film to a role and, when the person is on FilmHouse, to their profile.
--- People who haven't joined yet are credited by name only.
-CREATE TABLE IF NOT EXISTS credits (
-  id        INTEGER PRIMARY KEY,
-  film_id   INTEGER NOT NULL REFERENCES films(id) ON DELETE CASCADE,
-  role      TEXT NOT NULL,
-  user_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  name      TEXT NOT NULL,
-  position  INTEGER NOT NULL DEFAULT 0
-);
-CREATE INDEX IF NOT EXISTS credits_user ON credits(user_id);
-CREATE INDEX IF NOT EXISTS credits_film ON credits(film_id);
-
--- One row per visitor per film per day, so refreshing a page doesn't inflate "popular".
-CREATE TABLE IF NOT EXISTS film_views (
-  id         INTEGER PRIMARY KEY,
-  film_id    INTEGER NOT NULL REFERENCES films(id) ON DELETE CASCADE,
-  viewer     TEXT NOT NULL,
-  day        TEXT NOT NULL DEFAULT (date('now')),
-  viewed_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE (film_id, viewer, day)
-);
-CREATE INDEX IF NOT EXISTS film_views_film_time ON film_views(film_id, viewed_at);
-
--- Role-specific, long-form recommendations (our answer to the "like" button).
-CREATE TABLE IF NOT EXISTS recommendations (
-  id          INTEGER PRIMARY KEY,
-  film_id     INTEGER NOT NULL REFERENCES films(id) ON DELETE CASCADE,
-  author_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role        TEXT NOT NULL,
-  body        TEXT NOT NULL,
-  word_count  INTEGER NOT NULL,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE (film_id, author_id, role)
-);
-
-CREATE TABLE IF NOT EXISTS board_posts (
-  id           INTEGER PRIMARY KEY,
-  author_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  kind         TEXT NOT NULL,              -- 'crew_call' | 'available'
-  title        TEXT NOT NULL,
-  description  TEXT NOT NULL,
-  location     TEXT NOT NULL DEFAULT '',
-  start_date   TEXT,                       -- YYYY-MM-DD
-  end_date     TEXT,
-  compensation TEXT NOT NULL DEFAULT '',
-  contact      TEXT NOT NULL DEFAULT '',
-  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS board_post_roles (
-  post_id  INTEGER NOT NULL REFERENCES board_posts(id) ON DELETE CASCADE,
-  role     TEXT NOT NULL,
-  PRIMARY KEY (post_id, role)
-);
-
--- Behind-the-scenes photos from set.
-CREATE TABLE IF NOT EXISTS set_photos (
-  id          INTEGER PRIMARY KEY,
-  author_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  film_id     INTEGER REFERENCES films(id) ON DELETE SET NULL,
-  image_path  TEXT NOT NULL,
-  caption     TEXT NOT NULL DEFAULT '',
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-`;
-
-function openDb(file = process.env.FILMHOUSE_DB || path.join(__dirname, '..', 'data', 'filmhouse.db')) {
-  if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
-  db.exec(SCHEMA);
-  return db;
+/**
+ * Open the database. In production this is a real Postgres server (DATABASE_URL).
+ * Without one, it falls back to PGlite — Postgres compiled to WebAssembly — so development and
+ * tests run against the same SQL with nothing to install. `memory://` gives a throwaway database.
+ */
+async function openDb(url = process.env.DATABASE_URL || 'pglite://data/pglite', { searchPath } = {}) {
+  if (/^postgres(ql)?:\/\//.test(url)) return openPg(url, searchPath);
+  return openPglite(url === 'memory://' ? undefined : url.replace(/^pglite:\/\//, ''));
 }
 
-// Run fn inside a transaction, rolling back if it throws.
-function transaction(db, fn) {
-  db.exec('BEGIN');
+async function openPg(url, searchPath) {
+  const pg = require('pg');
+  pg.types.setTypeParser(TYPE_DATE, (v) => v);
+  pg.types.setTypeParser(TYPE_INT8, (v) => Number(v));
+  const pool = new pg.Pool({
+    connectionString: url,
+    max: Number(process.env.DATABASE_POOL_SIZE) || 10,
+    // Managed providers use TLS; verify it unless explicitly told the server has a private CA.
+    ssl: /sslmode=disable/.test(url) ? false : { rejectUnauthorized: process.env.DATABASE_SSL_NO_VERIFY !== '1' },
+  });
+  // Used by tests to give each run its own schema.
+  if (searchPath) {
+    if (!/^[a-z_][a-z0-9_]*$/.test(searchPath)) throw new Error('Invalid search path');
+    pool.on('connect', (client) => client.query(`SET search_path TO ${searchPath}`));
+  }
+  const wrap = (client) => ({
+    query: async (sql, params = []) => (await client.query(sql, params)).rows,
+    one: async (sql, params = []) => (await client.query(sql, params)).rows[0] || null,
+    exec: (sql) => client.query(sql),
+  });
+  return {
+    ...wrap(pool),
+    async tx(fn) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await fn(wrap(client));
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+    close: () => pool.end(),
+  };
+}
+
+async function openPglite(dataDir) {
+  const { PGlite } = require('@electric-sql/pglite');
+  if (dataDir) fs.mkdirSync(dataDir, { recursive: true });
+  const db = new PGlite(dataDir, {
+    parsers: { [TYPE_DATE]: (v) => v, [TYPE_INT8]: (v) => Number(v) },
+  });
+  await db.waitReady;
+  const wrap = (client) => ({
+    query: async (sql, params = []) => (await client.query(sql, params)).rows,
+    one: async (sql, params = []) => (await client.query(sql, params)).rows[0] || null,
+    exec: (sql) => client.exec(sql),
+  });
+  return {
+    ...wrap(db),
+    tx: (fn) => db.transaction((tx) => fn(wrap(tx))),
+    close: () => db.close(),
+  };
+}
+
+/** Apply any migrations in /migrations that haven't run yet, in filename order. */
+async function migrate(db, { log = () => {} } = {}) {
+  await db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())');
+  // Several app instances may boot at once; only one runs migrations.
+  await db.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK]);
   try {
-    const result = fn();
-    db.exec('COMMIT');
-    return result;
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
+    const done = new Set((await db.query('SELECT version FROM schema_migrations')).map((r) => r.version));
+    const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+    for (const file of files) {
+      if (done.has(file)) continue;
+      const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
+      await db.tx(async (tx) => {
+        await tx.exec(sql);
+        await tx.query('INSERT INTO schema_migrations (version) VALUES ($1)', [file]);
+      });
+      log(`Applied migration ${file}`);
+    }
+  } finally {
+    await db.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK]);
   }
 }
 
-module.exports = { openDb, transaction };
+module.exports = { openDb, migrate };

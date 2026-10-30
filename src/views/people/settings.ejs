@@ -7,6 +7,7 @@
   <% } %>
   <p class="eyebrow">Your card</p>
   <h1 class="display">Edit profile</h1>
+  <p class="small"><a href="/settings/account">Account &amp; privacy</a> — password, email, devices, blocked people, export or delete your data.</p>
   <%- include('../partials/errors') %>
   <form method="post" action="/settings" class="card form">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">

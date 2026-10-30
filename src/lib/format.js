@@ -2,15 +2,16 @@
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// SQLite stores UTC timestamps as "YYYY-MM-DD HH:MM:SS".
+// Timestamps arrive as Date objects; DATE columns as 'YYYY-MM-DD' strings.
 function parseDbDate(s) {
   if (!s) return null;
-  return new Date(/T|Z/.test(s) ? s : s.replace(' ', 'T') + 'Z');
+  return s instanceof Date ? s : new Date(s);
 }
 
 function fmtDate(s) {
   if (!s) return '';
-  const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
+  const iso = s instanceof Date ? s.toISOString() : String(s);
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
   return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 

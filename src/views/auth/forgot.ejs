@@ -1,0 +1,14 @@
+<%- include('../partials/head') %>
+<section class="wrap narrow page-pad">
+  <p class="eyebrow">It happens</p>
+  <h1 class="display">Reset your password</h1>
+  <form method="post" action="/forgot" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Your account email
+      <input type="email" name="email" required autocomplete="email">
+    </label>
+    <button class="btn btn-large" type="submit">Email me a reset link</button>
+    <p class="small muted">The link works once and expires after an hour.</p>
+  </form>
+</section>
+<%- include('../partials/foot') %>

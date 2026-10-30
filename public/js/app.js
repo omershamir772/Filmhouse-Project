@@ -28,6 +28,11 @@
       if (!window.confirm(form.dataset.confirm)) e.preventDefault();
     });
   });
+  $$('button[data-confirm-button]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      if (!window.confirm(btn.dataset.confirmButton)) e.preventDefault();
+    });
+  });
 
   // Credits editor: add / remove rows.
   var rows = $('[data-credit-rows]');

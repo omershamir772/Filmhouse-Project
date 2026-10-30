@@ -1,33 +1,25 @@
 // Fill a fresh database with demo members, films, credits, recommendations and bulletins.
 //
-//   npm run seed            # seeds data/filmhouse.db (refuses if it already has users)
-//   npm run seed -- --reset # wipes the database and uploads first
+//   npm run seed            # seeds the development database (refuses if it already has users)
+//   npm run seed -- --reset # wipes the development database and uploads first
 //
 // All people and credits are fictional. The embedded videos are Blender Foundation open movies
-// (CC BY), used only as placeholder footage.
+// (CC BY), used only as placeholder footage. Never run against production.
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { openDb, transaction } = require('../src/db');
+const crypto = require('node:crypto');
+const sharp = require('sharp');
+const { loadConfig } = require('../src/config');
+const { openDb, migrate } = require('../src/db');
+const { createStorage } = require('../src/lib/storage');
 const { hashPassword } = require('../src/lib/auth');
 const { parseVideoUrl } = require('../src/lib/video');
 const { wordCount } = require('../src/lib/text');
 const { MIN_RECOMMENDATION_WORDS } = require('../src/constants');
 
-const DB_FILE = process.env.FILMHOUSE_DB || path.join(__dirname, '..', 'data', 'filmhouse.db');
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
-const DEMO_PASSWORD = 'filmhouse';
-
-if (process.argv.includes('--reset')) {
-  for (const suffix of ['', '-wal', '-shm']) fs.rmSync(DB_FILE + suffix, { force: true });
-  fs.rmSync(UPLOAD_DIR, { recursive: true, force: true });
-}
-
-const db = openDb(DB_FILE);
-if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0) {
-  console.error('The database already has members. Run `npm run seed -- --reset` to start over.');
-  process.exit(1);
-}
+const DEMO_PASSWORD = 'filmhouse-demo';
+const ADMIN = 'noa';
 
 const people = [
   ['noa', 'Noa Ben-David', 'Student', 'Director,Writer', 'Tel Aviv', 'Sam Spiegel Film School', 'noabd', 'Writer-director drawn to quiet family dramas and long takes. Currently prepping my thesis film about my grandmother\'s bakery.'],
@@ -161,67 +153,118 @@ function daysFromNow(n) {
   return new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 }
 
-transaction(db, () => {
-  const ids = {};
-  const passwordHash = hashPassword(DEMO_PASSWORD);
-  const insertUser = db.prepare(`
-    INSERT INTO users (username, email, password_hash, display_name, status, crafts, location, school, letterboxd, bio)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  for (const [username, name, status, crafts, location, school, letterboxd, bio] of people) {
-    ids[username] = insertUser.run(username, `${username}@example.com`, passwordHash, name, status, crafts, location, school, letterboxd, bio).lastInsertRowid;
+async function main() {
+  const config = loadConfig();
+  if (config.isProd) throw new Error('Refusing to seed demo data into production.');
+  const reset = process.argv.includes('--reset');
+  if (reset && config.databaseUrl.startsWith('pglite://')) {
+    fs.rmSync(config.databaseUrl.replace('pglite://', ''), { recursive: true, force: true });
+  }
+  if (reset && config.storage.driver === 'local') fs.rmSync(path.resolve(config.storage.uploadDir), { recursive: true, force: true });
+
+  const db = await openDb(config.databaseUrl);
+  await migrate(db);
+  if (reset && !config.databaseUrl.startsWith('pglite://')) {
+    await db.exec('TRUNCATE users, films, credits, film_views, recommendations, board_posts, board_post_roles, set_photos, reports, blocks, audit_log, sessions, email_tokens, rate_limits RESTART IDENTITY CASCADE');
+  }
+  if ((await db.one('SELECT COUNT(*) AS n FROM users')).n > 0) {
+    console.error('The database already has members. Run `npm run seed -- --reset` to start over.');
+    process.exit(1);
+  }
+  const storage = createStorage(config.storage);
+
+  // Placeholder set photos are rendered before the transaction (sharp is slow-ish).
+  const photoFiles = [];
+  for (const [, , caption, palette] of photos) {
+    const svg = Buffer.from(placeholderPhoto(caption, palette));
+    const id = crypto.randomBytes(16).toString('hex');
+    const full = await sharp(svg).webp({ quality: 82 }).toBuffer();
+    const thumb = await sharp(svg).resize(480, 480, { fit: 'cover' }).webp({ quality: 78 }).toBuffer();
+    await storage.put(`photos/${id}.webp`, full, 'image/webp');
+    await storage.put(`photos/${id}-thumb.webp`, thumb, 'image/webp');
+    photoFiles.push({ image_key: `photos/${id}.webp`, thumb_key: `photos/${id}-thumb.webp` });
   }
 
-  const filmIds = {};
-  const insertFilm = db.prepare(`
-    INSERT INTO films (owner_id, title, year, runtime_min, logline, video_url, provider, video_id, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?))`);
-  const insertCredit = db.prepare('INSERT INTO credits (film_id, role, user_id, name, position) VALUES (?, ?, ?, ?, ?)');
-  films.forEach((f, i) => {
-    const video = parseVideoUrl(f.url);
-    const id = insertFilm.run(ids[f.owner], f.title, f.year, f.runtime, f.logline, f.url, video.provider, video.id, `-${(films.length - i) * 2} days`).lastInsertRowid;
-    filmIds[f.title] = id;
-    f.credits.forEach(([role, who], pos) => {
-      const user = people.find((p) => p[0] === who);
-      insertCredit.run(id, role, user ? ids[who] : null, user ? user[1] : who, pos);
-    });
-  });
-
-  const insertRec = db.prepare(`
-    INSERT INTO recommendations (film_id, author_id, role, body, word_count, created_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now', ?))`);
-  recommendations.forEach((r, i) => {
-    const words = wordCount(r.body);
-    if (words < MIN_RECOMMENDATION_WORDS) throw new Error(`Seed recommendation on ${r.film} is only ${words} words`);
-    insertRec.run(filmIds[r.film], ids[r.author], r.role, r.body, words, `-${i * 20 + 3} hours`);
-  });
-
-  // Simulated audience so the "popular" shelves have something to show.
-  const insertView = db.prepare(`INSERT OR IGNORE INTO film_views (film_id, viewer, day, viewed_at) VALUES (?, ?, date('now', ?), datetime('now', ?))`);
-  const audience = { 'The Last Loaf': [14, 30], Snowblind: [22, 41], 'Paper Boats': [3, 18], 'Low Tide': [6, 9] };
-  for (const [title, [today, week]] of Object.entries(audience)) {
-    for (let v = 0; v < week; v++) {
-      const ago = v < today ? `-${v * 20} minutes` : `-${1 + (v % 6)} days`;
-      insertView.run(filmIds[title], `seed-${v}`, ago, ago);
+  await db.tx(async (tx) => {
+    const ids = {};
+    const passwordHash = hashPassword(DEMO_PASSWORD);
+    for (const [username, name, status, crafts, location, school, letterboxd, bio] of people) {
+      const row = await tx.one(
+        `INSERT INTO users (username, email, password_hash, display_name, status, crafts, location, school, letterboxd, bio, role, email_verified_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now()) RETURNING id`,
+        [username, `${username}@example.com`, passwordHash, name, status, crafts, location, school, letterboxd, bio, username === ADMIN ? 'admin' : 'member'],
+      );
+      ids[username] = row.id;
     }
-  }
 
-  const insertPost = db.prepare(`
-    INSERT INTO board_posts (author_id, kind, title, description, location, start_date, end_date, compensation, contact)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  const insertRole = db.prepare('INSERT INTO board_post_roles (post_id, role) VALUES (?, ?)');
-  for (const b of bulletins) {
-    const id = insertPost.run(ids[b.author], b.kind, b.title, b.description, b.location, daysFromNow(b.start), daysFromNow(b.end), b.comp, b.contact).lastInsertRowid;
-    for (const role of b.roles) insertRole.run(id, role);
-  }
+    const filmIds = {};
+    for (const [i, f] of films.entries()) {
+      const video = parseVideoUrl(f.url);
+      const row = await tx.one(
+        `INSERT INTO films (owner_id, title, year, runtime_min, logline, video_url, provider, video_id, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now() - make_interval(days => $9)) RETURNING id`,
+        [ids[f.owner], f.title, f.year, f.runtime, f.logline, f.url, video.provider, video.id, (films.length - i) * 2],
+      );
+      filmIds[f.title] = row.id;
+      for (const [pos, [role, who]] of f.credits.entries()) {
+        const user = people.find((p) => p[0] === who);
+        await tx.query('INSERT INTO credits (film_id, role, user_id, name, position) VALUES ($1, $2, $3, $4, $5)', [
+          row.id,
+          role,
+          user ? ids[who] : null,
+          user ? user[1] : who,
+          pos,
+        ]);
+      }
+    }
 
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  const insertPhoto = db.prepare(`INSERT INTO set_photos (author_id, film_id, image_path, caption, created_at) VALUES (?, ?, ?, ?, datetime('now', ?))`);
-  photos.forEach(([author, film, caption, palette], i) => {
-    const file = `seed-bts-${i + 1}.svg`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, file), placeholderPhoto(caption, palette));
-    insertPhoto.run(ids[author], filmIds[film], file, caption, `-${i * 7 + 1} hours`);
+    for (const [i, r] of recommendations.entries()) {
+      const words = wordCount(r.body);
+      if (words < MIN_RECOMMENDATION_WORDS) throw new Error(`Seed recommendation on ${r.film} is only ${words} words`);
+      await tx.query(
+        `INSERT INTO recommendations (film_id, author_id, role, body, word_count, created_at)
+         VALUES ($1, $2, $3, $4, $5, now() - make_interval(hours => $6))`,
+        [filmIds[r.film], ids[r.author], r.role, r.body, words, i * 20 + 3],
+      );
+    }
+
+    // Simulated audience so the "popular" shelves have something to show.
+    const audience = { 'The Last Loaf': [14, 30], Snowblind: [22, 41], 'Paper Boats': [3, 18], 'Low Tide': [6, 9] };
+    for (const [title, [today, week]] of Object.entries(audience)) {
+      for (let v = 0; v < week; v++) {
+        const minutesAgo = v < today ? v * 20 : (1 + (v % 6)) * 1440;
+        await tx.query(
+          `INSERT INTO film_views (film_id, viewer, day, viewed_at)
+           VALUES ($1, $2, (now() - make_interval(mins => $3))::date, now() - make_interval(mins => $3)) ON CONFLICT DO NOTHING`,
+          [filmIds[title], `seed-${v}`, minutesAgo],
+        );
+      }
+    }
+
+    for (const b of bulletins) {
+      const row = await tx.one(
+        `INSERT INTO board_posts (author_id, kind, title, description, location, start_date, end_date, compensation, contact)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+        [ids[b.author], b.kind, b.title, b.description, b.location, daysFromNow(b.start), daysFromNow(b.end), b.comp, b.contact],
+      );
+      for (const role of b.roles) await tx.query('INSERT INTO board_post_roles (post_id, role) VALUES ($1, $2)', [row.id, role]);
+    }
+
+    for (const [i, [author, film, caption]] of photos.entries()) {
+      await tx.query(
+        `INSERT INTO set_photos (author_id, film_id, image_key, thumb_key, width, height, caption, created_at)
+         VALUES ($1, $2, $3, $4, 800, 600, $5, now() - make_interval(hours => $6))`,
+        [ids[author], filmIds[film], photoFiles[i].image_key, photoFiles[i].thumb_key, caption, i * 7 + 1],
+      );
+    }
   });
-});
 
-console.log(`Seeded ${people.length} members, ${films.length} films, ${recommendations.length} recommendations and ${bulletins.length} bulletins.`);
-console.log(`Sign in as any of: ${people.map((p) => p[0]).join(', ')} — password "${DEMO_PASSWORD}".`);
+  await db.close();
+  console.log(`Seeded ${people.length} members, ${films.length} films, ${recommendations.length} recommendations and ${bulletins.length} bulletins.`);
+  console.log(`Sign in as any of: ${people.map((p) => p[0]).join(', ')} — password "${DEMO_PASSWORD}". @${ADMIN} is an admin.`);
+}
+
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});

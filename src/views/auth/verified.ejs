@@ -1,0 +1,8 @@
+<%- include('../partials/head') %>
+<section class="wrap narrow center page-pad">
+  <p class="eyebrow">You're in</p>
+  <h1 class="display">Email confirmed</h1>
+  <p class="lead">Thank you. You can now add films, credit your crew, pin bulletins and write recommendations.</p>
+  <p><a class="btn" href="<%= currentUser ? '/films/new' : '/login' %>"><%= currentUser ? 'Add your first film' : 'Sign in' %></a></p>
+</section>
+<%- include('../partials/foot') %>

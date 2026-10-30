@@ -69,7 +69,7 @@
     <% if (photos.length) { %>
       <div class="photo-strip">
         <% photos.forEach(function (photo) { %>
-          <a href="/feed" class="strip-frame"><img src="/uploads/<%= photo.image_path %>" alt="<%= photo.caption || 'Behind the scenes' %>" loading="lazy"></a>
+          <a href="/feed" class="strip-frame"><img src="<%= mediaUrl(photo.thumb_key) %>" alt="<%= photo.caption || 'Behind the scenes' %>" loading="lazy"></a>
         <% }) %>
       </div>
     <% } else { %>
