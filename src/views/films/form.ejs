@@ -1,0 +1,74 @@
+<%- include('../partials/head') %>
+<section class="wrap medium page-pad">
+  <p class="eyebrow"><%= film ? 'Re-edit' : 'New reel' %></p>
+  <h1 class="display"><%= film ? 'Edit ' + film.title : 'Add a film' %></h1>
+  <p class="lead">Embed your film from YouTube or Vimeo, then credit the people who made it. Tag members with <code>@username</code> so the credit links to their profile.</p>
+  <%- include('../partials/errors') %>
+  <form method="post" action="<%= film ? '/films/' + film.id : '/films' %>" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <fieldset>
+      <legend>The film</legend>
+      <label>Title
+        <input name="title" value="<%= form.title || '' %>" required maxlength="120">
+      </label>
+      <label>YouTube or Vimeo link
+        <input type="url" name="video_url" value="<%= form.video_url || '' %>" required placeholder="https://vimeo.com/123456789" data-video-preview>
+        <span class="hint">We embed your film rather than hosting it. Unlisted links work too.</span>
+      </label>
+      <div class="video-preview" hidden></div>
+      <div class="row">
+        <label>Year <input type="number" name="year" value="<%= form.year || '' %>" min="1888" max="<%= new Date().getFullYear() + 1 %>"></label>
+        <label>Runtime (minutes) <input type="number" name="runtime_min" value="<%= form.runtime_min || '' %>" min="1" max="999"></label>
+      </div>
+      <label>Logline
+        <textarea name="logline" rows="3" maxlength="400" placeholder="One or two sentences. What is it about?"><%= form.logline || '' %></textarea>
+      </label>
+    </fieldset>
+
+    <fieldset class="credits-editor">
+      <legend>Credits</legend>
+      <p class="hint">Every film must credit a <strong>Director</strong>, <strong>Cinematographer</strong> and <strong>Editor</strong>. Add as many other crew as you like.</p>
+      <datalist id="members">
+        <% members.forEach(function (m) { %><option value="@<%= m.username %>"><%= m.display_name %></option><% }) %>
+      </datalist>
+      <div class="credit-rows" data-credit-rows>
+        <% rows.forEach(function (row) { %>
+          <div class="credit-row">
+            <select name="credit_role" aria-label="Role">
+              <option value="">Role…</option>
+              <% ALL_ROLES.forEach(function (r) { %><option value="<%= r %>" <%= row.role === r ? 'selected' : '' %>><%= r %><%= REQUIRED_ROLES.includes(r) ? ' *' : '' %></option><% }) %>
+            </select>
+            <input name="credit_person" value="<%= row.person %>" list="members" placeholder="@username or full name" aria-label="Person" maxlength="80">
+            <button type="button" class="icon-button" data-remove-credit aria-label="Remove credit">×</button>
+          </div>
+        <% }) %>
+      </div>
+      <template id="credit-row-template">
+        <div class="credit-row">
+          <select name="credit_role" aria-label="Role">
+            <option value="">Role…</option>
+            <% ALL_ROLES.forEach(function (r) { %><option><%= r %></option><% }) %>
+          </select>
+          <input name="credit_person" list="members" placeholder="@username or full name" aria-label="Person" maxlength="80">
+          <button type="button" class="icon-button" data-remove-credit aria-label="Remove credit">×</button>
+        </div>
+      </template>
+      <p class="chips add-credit">
+        <span class="small muted">Add:</span>
+        <% OPTIONAL_ROLES.slice(0, 6).forEach(function (r) { %><button type="button" class="chip chip-button" data-add-credit="<%= r %>">+ <%= r %></button><% }) %>
+        <button type="button" class="chip chip-button" data-add-credit="">+ Other</button>
+      </p>
+    </fieldset>
+    <div class="form-actions">
+      <button class="btn btn-large" type="submit"><%= film ? 'Save changes' : 'Premiere it' %></button>
+      <a href="<%= film ? '/films/' + film.id : '/films' %>">Cancel</a>
+    </div>
+  </form>
+  <% if (film) { %>
+    <form method="post" action="/films/<%= film.id %>/delete" class="danger-zone" data-confirm="Remove this film and all its credits and recommendations?">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="link-button danger" type="submit">Remove this film from FilmHouse</button>
+    </form>
+  <% } %>
+</section>
+<%- include('../partials/foot') %>

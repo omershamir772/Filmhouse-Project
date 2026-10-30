@@ -1,0 +1,123 @@
+<%- include('../partials/head') %>
+<article class="film-page">
+  <div class="screen-wrap">
+    <div class="wrap">
+      <div class="screen">
+        <iframe src="<%= film.embed %>" title="<%= film.title %>" loading="lazy" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap film-layout">
+    <div class="film-main">
+      <header class="film-head">
+        <h1 class="display"><%= film.title %></h1>
+        <p class="film-facts">
+          <% if (film.year) { %><span><%= film.year %></span><% } %>
+          <% if (film.runtime_min) { %><span><%= film.runtime_min %> min</span><% } %>
+          <span>added by <a href="/u/<%= film.owner_username %>"><%= film.owner_name %></a></span>
+          <a class="small" href="<%= film.video_url %>" rel="noopener noreferrer" target="_blank">Watch on <%= film.provider === 'vimeo' ? 'Vimeo' : 'YouTube' %> ↗</a>
+        </p>
+        <% if (film.logline) { %><p class="logline"><%= film.logline %></p><% } %>
+        <% if (currentUser && currentUser.id === film.owner_id) { %>
+          <p><a class="btn btn-ghost btn-small" href="/films/<%= film.id %>/edit">Edit film &amp; credits</a></p>
+        <% } %>
+      </header>
+
+      <section id="recommendations" class="section">
+        <header class="section-head">
+          <h2 class="marquee-title">Recommendations</h2>
+          <p class="small muted">Long-form, craft-specific notes from fellow filmmakers.</p>
+        </header>
+
+        <% if (recommendations.length) { %>
+          <% var recRolesPresent = [...new Set(recommendations.map(function (r) { return r.role; }))]; %>
+          <% if (recRolesPresent.length > 1) { %>
+            <p class="chips" data-rec-filter>
+              <button type="button" class="chip chip-button active" data-role="">All (<%= recommendations.length %>)</button>
+              <% recRolesPresent.forEach(function (r) { %>
+                <button type="button" class="chip chip-button" data-role="<%= r %>"><%= r %> (<%= recommendations.filter(function (x) { return x.role === r; }).length %>)</button>
+              <% }) %>
+            </p>
+          <% } %>
+          <div class="stack">
+            <% recommendations.forEach(function (rec) { %>
+              <article class="recommendation" id="rec-<%= rec.id %>" data-role="<%= rec.role %>">
+                <header>
+                  <span class="chip chip-accent">On the <%= rec.role.toLowerCase() %></span>
+                  <span class="small muted">by <a href="/u/<%= rec.username %>"><%= rec.display_name %></a> (<%= rec.status %>) · <%= timeAgo(rec.created_at) %> · <%= rec.word_count %> words</span>
+                </header>
+                <div class="rec-body collapsible">
+                  <% paragraphs(rec.body).forEach(function (p) { %><p><%= p %></p><% }) %>
+                </div>
+                <% if (currentUser && currentUser.id === rec.author_id) { %>
+                  <form method="post" action="/recommendations/<%= rec.id %>/delete" data-confirm="Delete your recommendation?">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button class="link-button danger small" type="submit">Delete</button>
+                  </form>
+                <% } %>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="empty">No recommendations yet. Watched it closely? Be the first to write about the craft.</p>
+        <% } %>
+
+        <div class="card rec-form-card" id="write">
+          <h3>Write a recommendation</h3>
+          <% if (!currentUser) { %>
+            <p><a href="/login?next=/films/<%= film.id %>%23write">Sign in</a> to write a recommendation.</p>
+          <% } else if (isCredited) { %>
+            <p class="muted">You worked on this film, so the recommendations are for the audience to write. Share it with your peers instead!</p>
+          <% } else { %>
+            <p class="muted small">FilmHouse doesn't have a like button. Instead, pick one craft and tell the crew what worked — and why. Recommendations need at least <strong><%= MIN_RECOMMENDATION_WORDS %> words</strong>, and appear on the credited person's profile.</p>
+            <%- include('../partials/errors', { errors: recErrors }) %>
+            <form method="post" action="/films/<%= film.id %>/recommendations" class="form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <label>Which craft are you recommending?
+                <select name="role" required>
+                  <option value="">Choose a role…</option>
+                  <% recRoles.forEach(function (r) { %><option value="<%= r %>" <%= recForm.role === r ? 'selected' : '' %>><%= r %></option><% }) %>
+                </select>
+              </label>
+              <label>Your recommendation
+                <textarea name="body" rows="12" required data-min-words="<%= MIN_RECOMMENDATION_WORDS %>" placeholder="What did you notice? A shot, a cut, a sound cue that stayed with you. How did the craft serve the story? What would you tell a fellow filmmaker about it?"><%= recForm.body %></textarea>
+              </label>
+              <div class="word-meter" aria-live="polite">
+                <div class="word-meter-bar"><span></span></div>
+                <span class="word-meter-label small"></span>
+              </div>
+              <button class="btn" type="submit">Publish recommendation</button>
+            </form>
+          <% } %>
+        </div>
+      </section>
+
+      <% if (photos.length) { %>
+        <section class="section">
+          <header class="section-head"><h2 class="marquee-title">Behind the scenes</h2></header>
+          <div class="photo-grid">
+            <% photos.forEach(function (photo) { %><%- include('../partials/photo', { photo: photo }) %><% }) %>
+          </div>
+        </section>
+      <% } %>
+    </div>
+
+    <aside class="film-credits">
+      <h2 class="credits-title">Credits</h2>
+      <dl class="credits">
+        <% creditGroups.forEach(function (g) { %>
+          <dt><%= g.role %></dt>
+          <dd>
+            <% g.people.forEach(function (p, i) { %><% if (p.username) { %><a href="/u/<%= p.username %>" class="credit-link"><%= p.display_name %></a><% } else { %><span class="credit-unlinked" title="Not on FilmHouse yet"><%= p.name %></span><% } %><%= i < g.people.length - 1 ? ', ' : '' %><% }) %>
+            <% if (currentUser && !isCredited && recRoles.includes(g.role)) { %>
+              <a class="credit-rec small" href="?role=<%= encodeURIComponent(g.role) %>#write" title="Recommend the <%= g.role.toLowerCase() %>">✎</a>
+            <% } %>
+          </dd>
+        <% }) %>
+      </dl>
+      <p class="small muted">Linked names are FilmHouse members. Grey names haven't joined yet.</p>
+    </aside>
+  </div>
+</article>
+<%- include('../partials/foot') %>

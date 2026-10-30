@@ -1,0 +1,12 @@
+<%# Expects `post` with `roles` as an array or comma separated string. %>
+<% var roles = Array.isArray(post.roles) ? post.roles : String(post.roles || '').split(', ').filter(Boolean); %>
+<article class="bulletin bulletin-<%= post.kind %>">
+  <p class="bulletin-kind"><%= POST_TYPES[post.kind] %></p>
+  <h3><a href="/board/<%= post.id %>"><%= post.title %></a></h3>
+  <p class="bulletin-meta">
+    <span>📅 <%= fmtRange(post.start_date, post.end_date) %></span>
+    <% if (post.location) { %><span>📍 <%= post.location %></span><% } %>
+  </p>
+  <p class="chips"><% roles.forEach(function (r) { %><span class="chip"><%= r %></span><% }) %></p>
+  <p class="bulletin-by small muted">pinned by <a href="/u/<%= post.username %>"><%= post.display_name %></a> · <%= timeAgo(post.created_at) %></p>
+</article>

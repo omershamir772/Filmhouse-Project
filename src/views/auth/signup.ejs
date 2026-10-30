@@ -1,0 +1,34 @@
+<%- include('../partials/head') %>
+<section class="wrap narrow page-pad">
+  <p class="eyebrow">Admit one</p>
+  <h1 class="display">Join FilmHouse</h1>
+  <p class="lead">Build a portfolio, get credited for your work, and meet the crew for your next film.</p>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/signup" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Your name
+      <input name="display_name" value="<%= form.display_name || '' %>" required maxlength="60" autocomplete="name">
+    </label>
+    <label>Username
+      <span class="input-prefix"><span>filmhouse/u/</span><input name="username" value="<%= form.username || '' %>" required pattern="[a-z0-9_]{3,24}" maxlength="24" autocomplete="username" title="3–24 lowercase letters, numbers or underscores"></span>
+      <span class="hint">Crew will tag you in credits as @username.</span>
+    </label>
+    <label>Email
+      <input type="email" name="email" value="<%= form.email || '' %>" required autocomplete="email">
+    </label>
+    <label>Password
+      <input type="password" name="password" required minlength="8" autocomplete="new-password">
+    </label>
+    <fieldset>
+      <legend>I am a…</legend>
+      <div class="segmented">
+        <% MEMBER_STATUSES.forEach(function (s, i) { %>
+          <label><input type="radio" name="status" value="<%= s %>" <%= (form.status ? form.status === s : i === 0) ? 'checked' : '' %>> <span><%= s %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <button class="btn btn-large" type="submit">Create my account</button>
+    <p class="small muted">Already a member? <a href="/login">Sign in</a>.</p>
+  </form>
+</section>
+<%- include('../partials/foot') %>

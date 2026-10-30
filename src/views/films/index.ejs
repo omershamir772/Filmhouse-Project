@@ -1,0 +1,30 @@
+<%- include('../partials/head') %>
+<section class="wrap page-pad">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">The programme</p>
+      <h1 class="display">Films</h1>
+      <p class="lead">Shorts, thesis films and passion projects — each one credited to the people who made it.</p>
+    </div>
+    <a class="btn" href="/films/new">+ Add a film</a>
+  </header>
+  <form class="filter-bar" method="get" action="/films">
+    <label class="grow"><span class="sr-only">Search</span><input type="search" name="q" value="<%= q %>" placeholder="Search titles, loglines, crew names…"></label>
+    <label><span class="sr-only">Role</span>
+      <select name="role">
+        <option value="">Any member credit</option>
+        <% ALL_ROLES.forEach(function (r) { %><option <%= role === r ? 'selected' : '' %>><%= r %></option><% }) %>
+      </select>
+    </label>
+    <button class="btn" type="submit">Search</button>
+    <% if (q || role) { %><a class="small" href="/films">Clear</a><% } %>
+  </form>
+  <% if (films.length) { %>
+    <div class="ticket-grid">
+      <% films.forEach(function (film) { %><%- include('../partials/film-card', { film: film, rank: 0 }) %><% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty">No films match that search.</p>
+  <% } %>
+</section>
+<%- include('../partials/foot') %>

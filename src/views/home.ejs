@@ -1,0 +1,93 @@
+<%- include('partials/head') %>
+<section class="hero">
+  <div class="wrap hero-inner">
+    <p class="eyebrow">Now showing · <%= fmtDate(new Date().toISOString()) %></p>
+    <h1 class="display">A house for the people<br><em>who make the films.</em></h1>
+    <p class="lead">FilmHouse is where film students, independent filmmakers and schools keep their work, credit their crews, find collaborators for the next shoot — and write about each other's craft with care.</p>
+    <% if (!currentUser) { %>
+      <p class="hero-actions"><a class="btn btn-large" href="/signup">Take a seat</a> <a class="btn btn-ghost btn-large" href="/films">Browse the films</a></p>
+    <% } else { %>
+      <p class="hero-actions"><a class="btn btn-large" href="/films/new">Add a film</a> <a class="btn btn-ghost btn-large" href="/board/new">Pin a bulletin</a></p>
+    <% } %>
+    <p class="hero-stats small">
+      <span><strong><%= stats.members %></strong> members</span>
+      <span><strong><%= stats.films %></strong> films</span>
+      <span><strong><%= stats.credits %></strong> linked credits</span>
+    </p>
+  </div>
+</section>
+
+<section class="wrap section">
+  <header class="section-head">
+    <h2 class="marquee-title">Popular today</h2>
+    <a class="small" href="/films">All films →</a>
+  </header>
+  <% if (today.length) { %>
+    <div class="ticket-grid">
+      <% today.forEach(function (film, i) { %><%- include('partials/film-card', { film: film, rank: i + 1 }) %><% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty">The house is quiet today. Be the first to watch something — or <a href="/films/new">add your own film</a>.</p>
+  <% } %>
+</section>
+
+<section class="wrap section">
+  <header class="section-head">
+    <h2 class="marquee-title">This week's programme</h2>
+    <p class="small muted">Ranked by unique viewers and thoughtful recommendations — never likes.</p>
+  </header>
+  <% if (week.length) { %>
+    <div class="ticket-grid">
+      <% week.forEach(function (film, i) { %><%- include('partials/film-card', { film: film, rank: i + 1 }) %><% }) %>
+    </div>
+  <% } else if (newest.length) { %>
+    <p class="small muted">Nothing has been watched this week yet. Here are the newest arrivals:</p>
+    <div class="ticket-grid">
+      <% newest.forEach(function (film) { %><%- include('partials/film-card', { film: film, rank: 0 }) %><% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty">No films yet. The screen is waiting.</p>
+  <% } %>
+</section>
+
+<% if (latestRec) { %>
+<section class="wrap section">
+  <blockquote class="pull-quote">
+    <p class="eyebrow">Latest recommendation · <%= latestRec.role %></p>
+    <p class="quote">“<%= excerpt(latestRec.body, 55) %>”</p>
+    <footer>— <a href="/u/<%= latestRec.username %>"><%= latestRec.display_name %></a> on <a href="/films/<%= latestRec.film_id %>#rec-<%= latestRec.id %>"><em><%= latestRec.film_title %></em></a></footer>
+  </blockquote>
+</section>
+<% } %>
+
+<div class="wrap section split">
+  <section>
+    <header class="section-head">
+      <h2 class="marquee-title">From the set</h2>
+      <a class="small" href="/feed">More →</a>
+    </header>
+    <% if (photos.length) { %>
+      <div class="photo-strip">
+        <% photos.forEach(function (photo) { %>
+          <a href="/feed" class="strip-frame"><img src="/uploads/<%= photo.image_path %>" alt="<%= photo.caption || 'Behind the scenes' %>" loading="lazy"></a>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="empty">No behind-the-scenes photos yet. <a href="/feed">Share one from your last shoot.</a></p>
+    <% } %>
+  </section>
+  <section>
+    <header class="section-head">
+      <h2 class="marquee-title">On the board</h2>
+      <a class="small" href="/board">Search →</a>
+    </header>
+    <% if (posts.length) { %>
+      <div class="stack">
+        <% posts.forEach(function (post) { %><%- include('partials/board-card', { post: post }) %><% }) %>
+      </div>
+    <% } else { %>
+      <p class="empty">The corkboard is empty. <a href="/board/new">Pin a crew call.</a></p>
+    <% } %>
+  </section>
+</div>
+<%- include('partials/foot') %>

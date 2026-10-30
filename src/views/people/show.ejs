@@ -1,0 +1,104 @@
+<%- include('../partials/head') %>
+<% var isMe = currentUser && currentUser.id === profile.id; %>
+<section class="profile-hero">
+  <div class="wrap profile-head">
+    <span class="avatar avatar-xl" aria-hidden="true"><%= initials(profile.display_name) %></span>
+    <div class="profile-id">
+      <p class="eyebrow">@<%= profile.username %></p>
+      <h1 class="display"><%= profile.display_name %></h1>
+      <p class="profile-meta">
+        <span class="badge badge-<%= profile.status.toLowerCase() %>"><%= profile.status %></span>
+        <% if (profile.location) { %><span>📍 <%= profile.location %></span><% } %>
+        <% if (profile.school) { %><span>🎓 <%= profile.school %></span><% } %>
+      </p>
+      <% if (crafts.length) { %><p class="chips"><% crafts.forEach(function (c) { %><a class="chip" href="/people?craft=<%= encodeURIComponent(c) %>"><%= c %></a><% }) %></p><% } %>
+      <p class="profile-links">
+        <% if (profile.letterboxd) { %><a class="letterboxd" href="https://letterboxd.com/<%= profile.letterboxd %>/" rel="noopener noreferrer" target="_blank"><span class="lb-dots" aria-hidden="true"><i></i><i></i><i></i></span> Letterboxd</a><% } %>
+        <% if (profile.website) { %><a href="<%= profile.website %>" rel="noopener noreferrer nofollow" target="_blank">Website ↗</a><% } %>
+        <% if (isMe) { %><a class="btn btn-ghost btn-small" href="/settings">Edit profile</a><% } %>
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="wrap profile-layout">
+  <div>
+    <% if (profile.bio) { %>
+      <section class="section bio">
+        <% paragraphs(profile.bio).forEach(function (p) { %><p><%= p %></p><% }) %>
+      </section>
+    <% } %>
+
+    <section class="section">
+      <header class="section-head">
+        <h2 class="marquee-title">Filmography</h2>
+        <% if (isMe) { %><a class="small" href="/films/new">+ Add a film</a><% } %>
+      </header>
+      <% if (filmography.length) { %>
+        <div class="ticket-grid">
+          <% filmography.forEach(function (film) { %><%- include('../partials/film-card', { film: film, rank: 0 }) %><% }) %>
+        </div>
+      <% } else { %>
+        <p class="empty"><%= isMe ? "You haven't been credited on any films yet. Add your first one — or ask your director to tag you as @" + profile.username + "." : 'No credits yet.' %></p>
+      <% } %>
+    </section>
+
+    <section class="section">
+      <header class="section-head">
+        <h2 class="marquee-title">Recommendations received</h2>
+      </header>
+      <% if (recommendations.length) { %>
+        <p class="chips">
+          <% Object.keys(recsByRole).forEach(function (role) { %><span class="chip chip-accent"><%= role %> × <%= recsByRole[role] %></span><% }) %>
+        </p>
+        <div class="stack">
+          <% recommendations.forEach(function (rec) { %>
+            <article class="recommendation">
+              <header>
+                <span class="chip"><%= rec.role %></span>
+                <span class="small muted"><a href="/u/<%= rec.username %>"><%= rec.display_name %></a> on <a href="/films/<%= rec.film_id %>#rec-<%= rec.id %>"><em><%= rec.film_title %></em></a> · <%= timeAgo(rec.created_at) %></span>
+              </header>
+              <p class="rec-excerpt"><%= excerpt(rec.body, 60) %> <a class="small" href="/films/<%= rec.film_id %>#rec-<%= rec.id %>">Read in full</a></p>
+            </article>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="empty">No recommendations yet.</p>
+      <% } %>
+    </section>
+
+    <% if (photos.length) { %>
+      <section class="section">
+        <header class="section-head"><h2 class="marquee-title">From the set</h2></header>
+        <div class="photo-grid">
+          <% photos.forEach(function (photo) { %><%- include('../partials/photo', { photo: photo }) %><% }) %>
+        </div>
+      </section>
+    <% } %>
+  </div>
+
+  <aside class="profile-side">
+    <% if (collaborators.length) { %>
+      <div class="card">
+        <h3 class="side-title">Frequent collaborators</h3>
+        <ul class="plain-list">
+          <% collaborators.forEach(function (c) { %>
+            <li><a href="/u/<%= c.username %>"><%= c.display_name %></a> <span class="small muted"><%= c.films %> <%= c.films === 1 ? 'film' : 'films' %></span></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <% if (posts.length) { %>
+      <div class="card">
+        <h3 class="side-title">On the board</h3>
+        <ul class="plain-list">
+          <% posts.forEach(function (p) { %>
+            <li><a href="/board/<%= p.id %>"><%= p.title %></a><br><span class="small muted"><%= POST_TYPES[p.kind] %> · <%= fmtRange(p.start_date, p.end_date) %></span></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <p class="small muted">Member since <%= fmtDate(profile.created_at) %></p>
+  </aside>
+</div>
+<%- include('../partials/foot') %>

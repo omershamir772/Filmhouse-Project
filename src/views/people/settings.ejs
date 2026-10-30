@@ -1,0 +1,47 @@
+<%- include('../partials/head') %>
+<section class="wrap medium page-pad">
+  <% if (welcome) { %>
+    <div class="notice notice-ok"><strong>Welcome to the house!</strong> Tell people what you do so they can find you for their next shoot.</div>
+  <% } else if (saved) { %>
+    <div class="notice notice-ok">Profile saved. <a href="/u/<%= currentUser.username %>">View it →</a></div>
+  <% } %>
+  <p class="eyebrow">Your card</p>
+  <h1 class="display">Edit profile</h1>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/settings" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Name <input name="display_name" value="<%= form.display_name %>" required maxlength="60"></label>
+    <fieldset>
+      <legend>Status</legend>
+      <div class="segmented">
+        <% MEMBER_STATUSES.forEach(function (s) { %>
+          <label><input type="radio" name="status" value="<%= s %>" <%= form.status === s ? 'checked' : '' %>> <span><%= s %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Crafts <span class="hint">— what can people hire you for?</span></legend>
+      <div class="check-grid">
+        <% ALL_ROLES.forEach(function (r) { %>
+          <label class="check"><input type="checkbox" name="crafts" value="<%= r %>" <%= form.crafts.includes(r) ? 'checked' : '' %>> <span><%= r %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <div class="row">
+      <label>City <input name="location" value="<%= form.location %>" maxlength="80" placeholder="e.g. Tel Aviv"></label>
+      <label>School / institution <input name="school" value="<%= form.school %>" maxlength="100"></label>
+    </div>
+    <label>About you
+      <textarea name="bio" rows="6" maxlength="1500" placeholder="What kind of films do you want to make? Who are your influences?"><%= form.bio %></textarea>
+    </label>
+    <div class="row">
+      <label>Letterboxd
+        <input name="letterboxd" value="<%= form.letterboxd %>" placeholder="username or letterboxd.com/username">
+        <span class="hint">Link your diary so people can see what you watch.</span>
+      </label>
+      <label>Website / reel <input type="url" name="website" value="<%= form.website %>" placeholder="https://"></label>
+    </div>
+    <div class="form-actions"><button class="btn btn-large" type="submit">Save profile</button></div>
+  </form>
+</section>
+<%- include('../partials/foot') %>

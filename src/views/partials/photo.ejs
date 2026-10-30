@@ -1,0 +1,11 @@
+<figure class="polaroid">
+  <img src="/uploads/<%= photo.image_path %>" alt="<%= photo.caption || 'Behind-the-scenes photo' %>" loading="lazy">
+  <figcaption>
+    <% if (photo.caption) { %><span class="caption"><%= photo.caption %></span><% } %>
+    <span class="small muted">
+      <% if (photo.username) { %><a href="/u/<%= photo.username %>"><%= photo.display_name %></a><% } %>
+      <% if (photo.film_title) { %> on set of <a href="/films/<%= photo.film_id %>"><em><%= photo.film_title %></em></a><% } %>
+      · <%= timeAgo(photo.created_at) %>
+    </span>
+  </figcaption>
+</figure>

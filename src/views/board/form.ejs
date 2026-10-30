@@ -1,0 +1,48 @@
+<%- include('../partials/head') %>
+<section class="wrap medium page-pad">
+  <p class="eyebrow">Pin a bulletin</p>
+  <h1 class="display"><%= post.kind === 'available' ? 'Available for work' : 'Crew call' %></h1>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/board" class="card form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <fieldset>
+      <legend>What kind of bulletin?</legend>
+      <div class="segmented">
+        <% Object.keys(POST_TYPES).forEach(function (k) { %>
+          <label><input type="radio" name="kind" value="<%= k %>" <%= post.kind === k ? 'checked' : '' %>> <span><%= POST_TYPES[k] %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <label>Headline
+      <input name="title" value="<%= post.title || '' %>" required maxlength="120" placeholder="<%= post.kind === 'available' ? 'Gaffer with own kit, free weekends in November' : 'Looking for a DP for a 3-day thesis shoot' %>">
+    </label>
+    <label>Details
+      <textarea name="description" rows="7" required maxlength="4000" placeholder="The project, the schedule, the gear, what you can offer…"><%= post.description || '' %></textarea>
+    </label>
+    <fieldset>
+      <legend>Roles <span class="hint">— <%= post.kind === 'available' ? 'what you can do' : "who you're looking for" %></span></legend>
+      <div class="check-grid">
+        <% ALL_ROLES.forEach(function (r) { %>
+          <label class="check"><input type="checkbox" name="roles" value="<%= r %>" <%= (post.roles || []).includes(r) ? 'checked' : '' %>> <span><%= r %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <div class="row">
+      <label>Start date <input type="date" name="start_date" value="<%= post.start_date || '' %>"></label>
+      <label>End date <input type="date" name="end_date" value="<%= post.end_date || '' %>"></label>
+    </div>
+    <p class="hint">Leave dates empty if they're flexible.</p>
+    <div class="row">
+      <label>Location <input name="location" value="<%= post.location || '' %>" maxlength="80" placeholder="City, or Remote"></label>
+      <label>Compensation <input name="compensation" value="<%= post.compensation || '' %>" maxlength="120" placeholder="Paid / Deferred / Credit + meals"></label>
+    </div>
+    <label>How to get in touch
+      <input name="contact" value="<%= post.contact || '' %>" maxlength="160" placeholder="Email, phone or 'message me on my profile'">
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-large" type="submit">Pin it to the board</button>
+      <a href="/board">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/foot') %>

@@ -1,0 +1,32 @@
+<%- include('../partials/head') %>
+<section class="wrap medium page-pad">
+  <p><a class="small" href="/board">← Back to the board</a></p>
+  <article class="card bulletin-full bulletin-<%= post.kind %>">
+    <p class="bulletin-kind"><%= POST_TYPES[post.kind] %></p>
+    <h1 class="display"><%= post.title %></h1>
+    <p class="bulletin-meta">
+      <span>📅 <%= fmtRange(post.start_date, post.end_date) %></span>
+      <% if (post.location) { %><span>📍 <%= post.location %></span><% } %>
+      <% if (post.compensation) { %><span>💰 <%= post.compensation %></span><% } %>
+    </p>
+    <p class="chips"><% post.roles.forEach(function (r) { %><a class="chip" href="/board?role=<%= encodeURIComponent(r) %>"><%= r %></a><% }) %></p>
+    <div class="prose">
+      <% paragraphs(post.description).forEach(function (p) { %><p><%= p %></p><% }) %>
+    </div>
+    <footer class="bulletin-footer">
+      <p>Pinned by <a href="/u/<%= post.username %>"><strong><%= post.display_name %></strong></a> <span class="badge badge-<%= post.author_status.toLowerCase() %>"><%= post.author_status %></span> · <%= timeAgo(post.created_at) %></p>
+      <% if (currentUser) { %>
+        <p><strong>Contact:</strong> <%= post.contact || 'No contact details given — reach out via their profile.' %></p>
+      <% } else { %>
+        <p><a href="/login?next=/board/<%= post.id %>">Sign in</a> to see contact details.</p>
+      <% } %>
+      <% if (currentUser && currentUser.id === post.author_id) { %>
+        <form method="post" action="/board/<%= post.id %>/delete" data-confirm="Take this bulletin down?">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="link-button danger" type="submit">Take it down</button>
+        </form>
+      <% } %>
+    </footer>
+  </article>
+</section>
+<%- include('../partials/foot') %>

@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<section class="wrap page-pad">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">The company</p>
+      <h1 class="display">People</h1>
+      <p class="lead">Find a cinematographer from your school, an editor in your city, or the sound designer behind that short you loved.</p>
+    </div>
+  </header>
+  <form class="filter-bar" method="get" action="/people">
+    <label class="grow"><span class="sr-only">Search</span><input type="search" name="q" value="<%= filters.q %>" placeholder="Name, username or school"></label>
+    <label><span class="sr-only">Craft</span>
+      <select name="craft"><option value="">Any craft</option><% ALL_ROLES.forEach(function (r) { %><option <%= filters.craft === r ? 'selected' : '' %>><%= r %></option><% }) %></select>
+    </label>
+    <label><span class="sr-only">Status</span>
+      <select name="status"><option value="">Anyone</option><% MEMBER_STATUSES.forEach(function (s) { %><option <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }) %></select>
+    </label>
+    <label><span class="sr-only">Location</span><input name="location" value="<%= filters.location %>" placeholder="City"></label>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  <% if (people.length) { %>
+    <div class="people-grid">
+      <% people.forEach(function (p) { %>
+        <a class="person-card" href="/u/<%= p.username %>">
+          <span class="avatar" aria-hidden="true"><%= initials(p.display_name) %></span>
+          <span class="person-name"><%= p.display_name %></span>
+          <span class="badge badge-<%= p.status.toLowerCase() %>"><%= p.status %></span>
+          <% if (p.crafts) { %><span class="small muted"><%= p.crafts.split(',').slice(0, 3).join(' · ') %></span><% } %>
+          <span class="small muted"><%= [p.location, p.school].filter(Boolean).join(' — ') %></span>
+          <span class="small"><%= p.film_count %> <%= p.film_count === 1 ? 'credit' : 'credits' %></span>
+        </a>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty">Nobody matches those filters yet.</p>
+  <% } %>
+</section>
+<%- include('../partials/foot') %>

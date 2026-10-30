@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" data-theme="<%= theme %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title ? title + ' · FilmHouse' : 'FilmHouse — a home for people who make films' %></title>
+  <meta name="description" content="FilmHouse is a networking and portfolio home for film students, independent filmmakers and institutions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2315100d'/><text x='16' y='23' font-family='Georgia' font-size='20' font-weight='700' text-anchor='middle' fill='%23e0a84e'>F</text></svg>">
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="marquee-logo" href="/" aria-label="FilmHouse home"><span>Film</span><em>House</em></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav" aria-label="Main">
+      <a href="/films" class="<%= path.startsWith('/films') ? 'active' : '' %>">Films</a>
+      <a href="/board" class="<%= path.startsWith('/board') ? 'active' : '' %>">Bulletin board</a>
+      <a href="/feed" class="<%= path.startsWith('/feed') ? 'active' : '' %>">From the set</a>
+      <a href="/people" class="<%= path.startsWith('/people') || path.startsWith('/u/') ? 'active' : '' %>">People</a>
+      <span class="nav-spacer"></span>
+      <% if (currentUser) { %>
+        <a class="btn btn-small" href="/films/new">+ Add a film</a>
+        <a href="/u/<%= currentUser.username %>" class="nav-me" title="Your profile">
+          <span class="avatar avatar-xs" aria-hidden="true"><%= initials(currentUser.display_name) %></span>
+          <span class="nav-me-name"><%= currentUser.display_name %></span>
+        </a>
+        <form method="post" action="/logout" class="inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="link-button" type="submit">Sign out</button>
+        </form>
+      <% } else { %>
+        <a href="/login">Sign in</a>
+        <a class="btn btn-small" href="/signup">Join</a>
+      <% } %>
+      <form method="post" action="/theme" class="inline theme-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="next" value="<%= path %>">
+        <input type="hidden" name="theme" value="<%= theme === 'dark' ? 'light' : 'dark' %>">
+        <button class="icon-button" type="submit" title="<%= theme === 'dark' ? 'Turn the house lights up' : 'Dim the house lights' %>" aria-label="Toggle light and dark mode">
+          <%= theme === 'dark' ? '☀' : '☾' %>
+        </button>
+      </form>
+    </nav>
+  </div>
+</header>
+<main id="main">

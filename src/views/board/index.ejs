@@ -1,0 +1,60 @@
+<%- include('../partials/head') %>
+<section class="wrap page-pad">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">The corkboard</p>
+      <h1 class="display">Bulletin board</h1>
+      <p class="lead">Crew calls for upcoming shoots, and filmmakers looking for their next set.</p>
+    </div>
+    <p class="head-actions">
+      <a class="btn" href="/board/new?kind=crew_call">Post a crew call</a>
+      <a class="btn btn-ghost" href="/board/new?kind=available">I'm available</a>
+    </p>
+  </header>
+
+  <div class="board-layout">
+    <form class="card form board-filters" method="get" action="/board">
+      <h2 class="side-title">Filter</h2>
+      <label>Keywords <input type="search" name="q" value="<%= filters.q %>" placeholder="music video, 16mm, thesis…"></label>
+      <fieldset>
+        <legend>Type</legend>
+        <div class="segmented segmented-stack">
+          <label><input type="radio" name="kind" value="" <%= !filters.kind ? 'checked' : '' %>> <span>Everything</span></label>
+          <% Object.keys(POST_TYPES).forEach(function (k) { %>
+            <label><input type="radio" name="kind" value="<%= k %>" <%= filters.kind === k ? 'checked' : '' %>> <span><%= POST_TYPES[k] %></span></label>
+          <% }) %>
+        </div>
+      </fieldset>
+      <label>Location <input name="location" value="<%= filters.location %>" placeholder="City or region"></label>
+      <div class="row">
+        <label>From <input type="date" name="from" value="<%= filters.from %>"></label>
+        <label>To <input type="date" name="to" value="<%= filters.to %>"></label>
+      </div>
+      <fieldset>
+        <legend>Roles</legend>
+        <div class="check-grid check-grid-tight">
+          <% ALL_ROLES.forEach(function (r) { %>
+            <label class="check"><input type="checkbox" name="role" value="<%= r %>" <%= filters.roles.includes(r) ? 'checked' : '' %>> <span><%= r %></span></label>
+          <% }) %>
+        </div>
+      </fieldset>
+      <label class="check"><input type="checkbox" name="include_past" value="1" <%= filters.include_past ? 'checked' : '' %>> <span>Include past shoots</span></label>
+      <div class="form-actions">
+        <button class="btn" type="submit">Search the board</button>
+        <a class="small" href="/board">Reset</a>
+      </div>
+    </form>
+
+    <div>
+      <p class="small muted results-count"><%= posts.length %> <%= posts.length === 1 ? 'bulletin' : 'bulletins' %> pinned</p>
+      <% if (posts.length) { %>
+        <div class="corkboard">
+          <% posts.forEach(function (post) { %><%- include('../partials/board-card', { post: post }) %><% }) %>
+        </div>
+      <% } else { %>
+        <p class="empty">Nothing pinned matches your search. Try widening the dates — or <a href="/board/new">pin your own</a>.</p>
+      <% } %>
+    </div>
+  </div>
+</section>
+<%- include('../partials/foot') %>

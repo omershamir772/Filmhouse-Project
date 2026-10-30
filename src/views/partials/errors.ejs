@@ -1,0 +1,6 @@
+<% if (typeof errors !== 'undefined' && errors.length) { %>
+  <div class="notice notice-error" role="alert">
+    <strong>Hold on — a few notes from the script supervisor:</strong>
+    <ul><% errors.forEach(function (e) { %><li><%= e %></li><% }) %></ul>
+  </div>
+<% } %>

@@ -1,0 +1,20 @@
+<%# Expects `film` (decorated, with optional `directors`, `roles`, `views`, `recs`) and optional `rank`. %>
+<article class="ticket">
+  <a class="ticket-poster" href="/films/<%= film.id %>">
+    <span class="poster-fallback" aria-hidden="true"><%= film.title %></span>
+    <% if (film.thumbnail) { %><img src="<%= film.thumbnail %>" alt="" loading="lazy" data-hide-on-error><% } %>
+    <% if (typeof rank !== 'undefined' && rank) { %><span class="ticket-rank">No. <%= rank %></span><% } %>
+    <span class="ticket-provider"><%= film.provider === 'vimeo' ? 'Vimeo' : 'YouTube' %></span>
+  </a>
+  <div class="ticket-stub">
+    <h3 class="ticket-title"><a href="/films/<%= film.id %>"><%= film.title %></a><% if (film.year) { %> <span class="year">(<%= film.year %>)</span><% } %></h3>
+    <% if (film.roles && film.roles.length) { %>
+      <p class="ticket-meta"><%= film.roles.join(' · ') %></p>
+    <% } else if (film.directors && film.directors.length) { %>
+      <p class="ticket-meta">dir. <%= film.directors.join(' & ') %></p>
+    <% } %>
+    <% if (typeof film.recs !== 'undefined' && (film.views || film.recs)) { %>
+      <p class="ticket-stats"><%= film.views %> <%= film.views === 1 ? 'viewer' : 'viewers' %><% if (film.recs) { %> · <%= film.recs %> <%= film.recs === 1 ? 'recommendation' : 'recommendations' %><% } %></p>
+    <% } %>
+  </div>
+</article>

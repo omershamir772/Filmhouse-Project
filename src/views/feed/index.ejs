@@ -1,0 +1,54 @@
+<%- include('../partials/head') %>
+<section class="wrap page-pad">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Behind the scenes</p>
+      <h1 class="display">From the set</h1>
+      <p class="lead">Rigs, lighting setups, the 4 a.m. call times. Share what it looked like on the other side of the camera.</p>
+    </div>
+  </header>
+
+  <% if (currentUser) { %>
+    <%- include('../partials/errors') %>
+    <form method="post" action="/feed" enctype="multipart/form-data" class="card form share-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label class="file-drop">
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" required data-image-preview>
+        <span class="file-drop-label">📷 Choose a photo from set <span class="small muted">(JPEG, PNG, WebP or GIF, up to 8 MB)</span></span>
+        <img class="file-drop-preview" alt="" hidden>
+      </label>
+      <div class="share-fields">
+        <label>Caption <textarea name="caption" rows="2" maxlength="500" placeholder="Day 2, golden hour, one bounce board and a lot of luck."><%= form.caption || '' %></textarea></label>
+        <% if (myFilms.length) { %>
+          <label>Which film? <select name="film_id"><option value="">— Not tied to a film —</option><% myFilms.forEach(function (f) { %><option value="<%= f.id %>" <%= form.film_id === f.id ? 'selected' : '' %>><%= f.title %></option><% }) %></select></label>
+        <% } %>
+        <button class="btn" type="submit">Share</button>
+      </div>
+    </form>
+  <% } else { %>
+    <p class="notice"><a href="/login?next=/feed">Sign in</a> to share photos from your set.</p>
+  <% } %>
+
+  <% if (photos.length) { %>
+    <div class="photo-grid">
+      <% photos.forEach(function (photo) { %>
+        <div class="photo-item">
+          <%- include('../partials/photo', { photo: photo }) %>
+          <% if (currentUser && currentUser.id === photo.author_id) { %>
+            <form method="post" action="/feed/<%= photo.id %>/delete" data-confirm="Delete this photo?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="link-button danger small" type="submit">Delete</button>
+            </form>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <nav class="pager">
+      <% if (page > 1) { %><a href="/feed?page=<%= page - 1 %>">← Newer</a><% } %>
+      <% if (hasMore) { %><a href="/feed?page=<%= page + 1 %>">Older →</a><% } %>
+    </nav>
+  <% } else { %>
+    <p class="empty">No photos yet. The darkroom is empty.</p>
+  <% } %>
+</section>
+<%- include('../partials/foot') %>
