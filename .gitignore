@@ -3,3 +3,5 @@ data/
 uploads/
 *.log
 .env
+public/map/
+map/node_modules/

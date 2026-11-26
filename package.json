@@ -13,7 +13,9 @@
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "make-admin": "node scripts/make-admin.js",
-    "test": "node --test --test-concurrency=1 'test/**/*.test.js'"
+    "test": "node --test --test-concurrency=1 'test/**/*.test.js'",
+    "build": "npm ci --prefix map && npm run build --prefix map",
+    "dev:map": "npm run dev --prefix map"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",

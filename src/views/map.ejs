@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World Map · FilmHouse</title>
+  <meta name="description" content="Film schools, cinematheques and film festivals around the world, on an interactive globe.">
+  <meta name="theme-color" content="#090d16">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <% assets.styles.forEach(function (href) { %><link rel="stylesheet" href="<%= href %>"><% }) %>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23090d16'/><circle cx='16' cy='16' r='10' fill='none' stroke='%233b82f6' stroke-width='2'/></svg>">
+  <script type="module" src="<%= assets.script %>"></script>
+</head>
+<body>
+  <script id="filmhouse-map-context" type="application/json"><%- contextJson %></script>
+  <div id="filmhouse-map"></div>
+  <noscript>The FilmHouse world map needs JavaScript.</noscript>
+</body>
+</html>

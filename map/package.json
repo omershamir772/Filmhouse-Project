@@ -1,0 +1,34 @@
+{
+  "name": "filmhouse-map",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FilmHouse 3D world map (React + TypeScript + Tailwind), served by the main app at /map.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-globe.gl": "^2.38.0",
+    "three": "^0.187.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/d3-geo": "^3.1.1",
+    "@types/geojson": "^7946.0.16",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
+    "@types/topojson-client": "^3.1.5",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.4.0"
+  }
+}

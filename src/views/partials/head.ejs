@@ -23,6 +23,7 @@
       <a href="/board" class="<%= path.startsWith('/board') ? 'active' : '' %>">Bulletin board</a>
       <a href="/feed" class="<%= path.startsWith('/feed') ? 'active' : '' %>">From the set</a>
       <a href="/people" class="<%= path.startsWith('/people') || path.startsWith('/u/') ? 'active' : '' %>">People</a>
+      <a href="/map">World map</a>
       <span class="nav-spacer"></span>
       <% if (currentUser) { %>
         <% if (currentUser.role === 'admin') { %><a href="/admin" class="<%= path.startsWith('/admin') ? 'active' : '' %>">Moderation</a><% } %>

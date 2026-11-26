@@ -8,8 +8,9 @@ Requires **Node.js 22.13+**. Nothing else to install: without a `DATABASE_URL`, 
 
 ```bash
 npm install
+npm run build    # builds the 3D world map (map/) into public/map
 npm run seed     # demo members, films, credits, recommendations, bulletins and set photos
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:3000  ·  world map at /map
 ```
 
 Every demo account uses the password `filmhouse-demo`. Try `noa`, who is an admin (see `/admin`), or `eli_dp`, `maya_cuts` and `tomas`. To wipe and reseed, run `npm run seed -- --reset`. In development, emails (verification, password reset) are printed to the terminal.
@@ -49,6 +50,14 @@ See **[SECURITY.md](SECURITY.md)** for how members are protected, how to report 
 
 **Homepage.** "Popular today" and "This week's programme" rank films by unique daily viewers plus recommendations. One recommendation counts as much as 10 views, and refreshing a page doesn't add views. The homepage also shows the latest recommendation, recent set photos and new bulletins.
 
+**3D world map (`/map`).** A rotatable globe of film schools, cinematheques and festivals:
+- crisp Natural Earth borders, with country labels that never overlap
+- filters, search and fly-to
+- a detail drawer that links to members and local crew calls
+- a community "Add to Map" form whose submissions wait for moderation
+
+It's built as a separate React + TypeScript + Tailwind app; see [map/README.md](map/README.md).
+
 ## Design
 
 The site is dark by default, with a light "matinee" mode in the header. The palette is brass and velvet, with Playfair Display for headings, DM Sans for body text and Courier Prime for script-style details. It has a film-grain overlay, film cards shaped like tickets, credits laid out like a typed script page, pinned notes on the bulletin board and polaroid set photos. It works on mobile and without JavaScript, which only adds enhancements.
@@ -67,6 +76,7 @@ src/
 migrations/         versioned SQL
 public/             CSS and progressive-enhancement JS
 scripts/            seed, migrate, make-admin
+map/                3D world map: React + TypeScript + Tailwind + react-globe.gl, built into public/map
 test/               node:test suites (app, security, unit)
 ```
 

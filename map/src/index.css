@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/*
+ * FilmHouse world map palette — change these to re-theme the map.
+ * The globe (WebGL) reads the same variables at start-up via src/lib/theme.ts.
+ */
+:root {
+  --map-bg: #090d16;
+  --map-globe: #0d1322;
+  --map-border: #3b82f6;
+  --map-border-bright: #60a5fa;
+  --map-border-hover: #bfdbfe;
+  --map-graticule: rgba(96, 165, 250, 0.13);
+  --map-atmosphere: #3b82f6;
+  --map-label: rgba(191, 219, 254, 0.78);
+  --map-panel: rgba(13, 19, 34, 0.72);
+  --map-panel-solid: #0d1322;
+  --map-line: rgba(96, 165, 250, 0.18);
+  --map-text: #e5edf9;
+  --map-muted: #8b9ab3;
+
+  /* Pin colours — warm accents that stand apart from the blue globe. */
+  --map-school: #fbbf24;
+  --map-cinematheque: #f472b6;
+  --map-festival: #34d399;
+  --map-pending: #cbd5e1;
+}
+
+/* Expose the palette as Tailwind colours: bg-map-bg, text-map-muted, border-map-line, … */
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-map-bg: var(--map-bg);
+  --color-map-globe: var(--map-globe);
+  --color-map-border: var(--map-border);
+  --color-map-border-bright: var(--map-border-bright);
+  --color-map-panel: var(--map-panel);
+  --color-map-panel-solid: var(--map-panel-solid);
+  --color-map-line: var(--map-line);
+  --color-map-text: var(--map-text);
+  --color-map-muted: var(--map-muted);
+  --color-map-school: var(--map-school);
+  --color-map-cinematheque: var(--map-cinematheque);
+  --color-map-festival: var(--map-festival);
+  --color-map-pending: var(--map-pending);
+}
+
+html,
+body,
+#filmhouse-map {
+  height: 100%;
+  margin: 0;
+  background: var(--map-bg);
+  color: var(--map-text);
+  overflow: hidden;
+}
+
+/* ---------- Globe overlays (created imperatively inside the WebGL scene) ---------- */
+
+.fh-country-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--map-label);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-shadow: 0 0 6px var(--map-bg), 0 0 2px var(--map-bg);
+  transition: opacity 180ms ease;
+}
+
+.fh-pin {
+  --pin: var(--map-school);
+  position: relative;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.fh-pin__dot {
+  position: absolute;
+  inset: 2px;
+  border-radius: 9999px;
+  background: var(--pin);
+  box-shadow: 0 0 0 2px var(--map-bg), 0 0 12px var(--pin);
+  transition: transform 150ms ease;
+}
+.fh-pin:hover .fh-pin__dot,
+.fh-pin:focus-visible .fh-pin__dot,
+.fh-pin[data-selected="true"] .fh-pin__dot {
+  transform: scale(1.45);
+}
+.fh-pin:focus-visible {
+  outline: 2px solid var(--map-border-bright);
+  outline-offset: 4px;
+  border-radius: 9999px;
+}
+.fh-pin[data-pending="true"] .fh-pin__dot {
+  background: transparent;
+  border: 2px dashed var(--map-pending);
+  box-shadow: 0 0 0 2px var(--map-bg);
+}
+.fh-pin__name {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font: 600 12px/1.2 var(--font-sans);
+  color: var(--map-text);
+  background: var(--map-panel-solid);
+  border: 1px solid var(--map-line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+.fh-pin:hover .fh-pin__name,
+.fh-pin:focus-visible .fh-pin__name,
+.fh-pin[data-selected="true"] .fh-pin__name {
+  opacity: 1;
+}
+
+/* Country tooltip rendered by react-globe.gl on hover. */
+.fh-country-tip {
+  font: 600 12px/1.2 var(--font-sans);
+  letter-spacing: 0.04em;
+  color: var(--map-text);
+  background: var(--map-panel-solid);
+  border: 1px solid var(--map-border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fh-pin__dot,
+  .fh-country-label {
+    transition: none;
+  }
+}

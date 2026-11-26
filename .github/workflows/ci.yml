@@ -27,6 +27,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Type-check and build the world map
+        run: npm run build
       - name: Tests (in-memory Postgres)
         run: npm test
       - name: Tests (real Postgres 16)
@@ -34,7 +36,9 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/filmhouse_test?sslmode=disable
       - name: Known vulnerabilities in dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm audit --prefix map --omit=dev --audit-level=high
 
   secrets:
     runs-on: ubuntu-latest

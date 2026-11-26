@@ -87,6 +87,7 @@ function createApp({ config, db, mailer = createMailer(config.email), storage = 
   app.use(require('./routes/feed'));
   app.use(require('./routes/moderation'));
   app.use(require('./routes/pages'));
+  app.use(require('./routes/map'));
 
   app.use((req, res) => {
     res.status(404).render('error', { title: 'Lost in the dark', message: "This reel doesn't exist. Maybe it ended up on the cutting room floor." });

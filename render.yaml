@@ -8,7 +8,7 @@ services:
     runtime: node
     plan: starter
     region: frankfurt
-    buildCommand: npm ci --omit=dev
+    buildCommand: npm ci --omit=dev && npm run build   # build also compiles the world map (map/)
     startCommand: npm start            # applies database migrations, then starts the server
     healthCheckPath: /healthz
     envVars:
